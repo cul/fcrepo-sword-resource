@@ -6,9 +6,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletContext;
@@ -67,6 +70,8 @@ public class SwordResource extends BaseRestResource {
     private Authorization m_authorization;
 
     private String m_realm;
+    
+    Set<String> m_collectionPids = null;
 
     public SwordResource(Server server) {
     	super(server);
@@ -81,6 +86,10 @@ public class SwordResource extends BaseRestResource {
     public void setDepositHandlers(Map<String, DepositHandler> handlers) {
     	m_sword.setDepositHandlers(handlers);
     }
+    
+    public void setCollectionPids(Collection<String> collectionPids) {
+    	m_collectionPids = new HashSet<String>(collectionPids);
+    }
 
     public void init() throws InitializationException {
         m_authn = m_context.getInitParameter("authentication-method");
@@ -88,6 +97,10 @@ public class SwordResource extends BaseRestResource {
             m_authn = "None";
         }
         log.info("Authentication type set to: " + m_authn);
+        
+        if (m_collectionPids == null) {
+        	m_collectionPids = new HashSet<String>(0);
+        }
 
         String maxUploadSizeStr = m_context.getInitParameter("maxUploadSize");
         if ((maxUploadSizeStr == null) ||
@@ -144,6 +157,50 @@ public class SwordResource extends BaseRestResource {
     public void setRealm(String realm) {
         m_realm = realm;
     }
+    
+    @GET
+    @Path("/service.atomsvc")
+    public Response getServiceDocument() {
+    	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
+
+    	if (!request.authenticated() && authenticateWithBasic()) {
+            return AbstractDepositResource.authnRequiredResponse(m_realm);
+        }
+    	try {
+    	Context authzContext;
+    	if (request.isProxied()){
+    		Context context = getContext();
+    		// do some authZ to see if this user is allowed to proxy
+    		//m_authorization.
+    		authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), request.getOnBehalfOf(), null, true);
+    	} else {
+    		authzContext = getContext();
+    	}
+    	
+    	ServiceDocument atomsvc = m_sword.doServiceDocument(request, authzContext);
+    	Response response = Response.status(200)
+    			.entity(atomsvc.marshall())
+    			.header("Content-Type", "application/atom+xml; charset=UTF-8")
+    			.build();
+    	return response;
+    	} catch (Exception e) {
+    		Response response = Response.status(500).build();
+    		return response;
+    	}
+    	
+    }
+    
+    /**
+     * POST to the service document is not supported
+     * @return
+     */
+    @POST
+    @Path("/service.atomsvc")
+    public Response postService() {
+        return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+                .entity("POST OPERATION NOT IMPLEMENTED").build();
+    }
+
 
     @GET
     @Path("/{collection}")
@@ -191,6 +248,18 @@ public class SwordResource extends BaseRestResource {
         }
     }
 
+    /**
+     * A POST to a Collection should create a resource.
+     * A success returns a 201 with a Location header of the ATOM entry for the created resource
+     * and an ATOM entry for the entity (xmlns="http://www.w3.org/2005/Atom") with:
+     * a unique id (/entry/id)
+     * a title (/entry/title)
+     * a date of update (/entry/updated)
+     * a link to the ATOM entry (/entry/link[@rel="edit"])
+     * a link to the resource content (/entry/link[@rel="edit-media"]) 
+     * @param collection
+     * @return Response
+     */
     @POST
     @Path("/{collection}")
     public Response postDeposit(@PathParam("collection") String collection) {
@@ -300,62 +369,6 @@ public class SwordResource extends BaseRestResource {
             return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
                     .entity(e.toString()).build();
         }
-    }
-
-    @GET
-    @Path("/servicedocument")
-    public Response getService() {
-        ServiceDocumentRequest sdr = new ServiceDocumentRequest(m_servletRequest);
-        if (!sdr.authenticated() && authenticateWithBasic()) {
-            return AbstractDepositResource.authnRequiredResponse(m_realm);
-        }
-        
-
-        try {
-            Context authzContext;
-        	if (sdr.isProxied()){
-                Context context = getContext();
-                // do some authZ to see if this user is allowed to proxy
-                authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), sdr.getOnBehalfOf(), null, true);
-        	} else {
-        		authzContext = getContext();
-        	}
-
-        	ServiceDocument sd = m_sword.doServiceDocument(sdr, authzContext);
-            if ((sd.getService().getMaxUploadSize() == -1) && (m_maxUpload != -1)) {
-                sd.getService().setMaxUploadSize(m_maxUpload);
-            }
-
-            String entity = sd.marshall();
-
-            Response response = Response.ok(entity)
-                    .header(HttpHeaders.CONTENT_TYPE, AbstractDepositResource.ATOMSVC_CONTENT_TYPE)
-                    .build();
-            return response;
-            // Print out the Service Document
-        } catch (SWORDAuthenticationException sae) {
-            // Ask for credentials again
-            return AbstractDepositResource.authnRequiredResponse(m_realm);
-        }catch (SWORDErrorException see) {
-            // Get the details and send the right SWORD error document
-            return AbstractDepositResource.errorResponse(see.getErrorURI(),
-                    see.getStatus(),
-                    see.getDescription(),
-                    m_servletRequest);
-        }  catch (SWORDException se) {
-            return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-                    .entity(se.toString()).build();
-        } catch (Exception e) {
-            return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-                    .entity(e.toString()).build();
-        }
-    }
-
-    @POST
-    @Path("servicedocument")
-    public Response postService() {
-        return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-                .entity("POST OPERATION NOT IMPLEMENTED").build();
     }
 
     /**
