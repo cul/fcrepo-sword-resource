@@ -21,10 +21,16 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 
+import org.apache.commons.httpclient.HttpStatus;
 import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
@@ -32,6 +38,7 @@ import org.fcrepo.server.Server;
 import org.fcrepo.server.errors.InitializationException;
 import org.fcrepo.server.rest.BaseRestResource;
 import org.fcrepo.server.security.Authorization;
+import org.fcrepo.server.storage.DOManager;
 import org.purl.sword.base.AtomDocumentResponse;
 import org.purl.sword.base.ChecksumUtils;
 import org.purl.sword.base.DepositResponse;
@@ -39,7 +46,6 @@ import org.purl.sword.base.ErrorCodes;
 import org.purl.sword.base.SWORDAuthenticationException;
 import org.purl.sword.base.SWORDErrorException;
 import org.purl.sword.base.SWORDException;
-import org.purl.sword.base.ServiceDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +54,10 @@ import edu.columbia.libraries.sword.SWORDServer;
 import edu.columbia.libraries.sword.impl.AtomEntryRequest;
 import edu.columbia.libraries.sword.impl.DepositRequest;
 import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
+import edu.columbia.libraries.sword.xml.entry.Entry;
+import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.libraries.sword.xml.SwordError;
+import edu.columbia.libraries.sword.xml.entry.Link;
 
 
 @Path("/")
@@ -68,15 +78,19 @@ public class SwordResource extends BaseRestResource {
     private SWORDServer m_sword;
     
     private Authorization m_authorization;
+    
+    private JAXBContext m_bind;
 
     private String m_realm;
     
     Set<String> m_collectionPids = null;
 
-    public SwordResource(Server server) {
+    public SwordResource(Server server) throws JAXBException {
     	super(server);
-        m_sword = new FedoraServer(m_management, null);
+        m_sword = new FedoraServer(server.getBean(DOManager.class), null);
         m_authorization = server.getBean(Authorization.class);
+		m_bind = JAXBContext.newInstance( ServiceDocument.class, Entry.class, SwordError.class );
+
     }
     
     public void setServletRequest(HttpServletRequest request) {
@@ -160,6 +174,7 @@ public class SwordResource extends BaseRestResource {
     
     @GET
     @Path("/service.atomsvc")
+    @Produces("text/xml")
     public Response getServiceDocument() {
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
 
@@ -179,7 +194,7 @@ public class SwordResource extends BaseRestResource {
     	
     	ServiceDocument atomsvc = m_sword.doServiceDocument(request, authzContext);
     	Response response = Response.status(200)
-    			.entity(atomsvc.marshall())
+    			.entity(atomsvc)
     			.header("Content-Type", "application/atom+xml; charset=UTF-8")
     			.build();
     	return response;
@@ -204,6 +219,7 @@ public class SwordResource extends BaseRestResource {
 
     @GET
     @Path("/{collection}")
+    @Produces("text/xml")
     public Response getDeposit(@PathParam("collection") String collection) {
 
         AtomEntryRequest adr = new AtomEntryRequest(m_servletRequest);
@@ -262,6 +278,7 @@ public class SwordResource extends BaseRestResource {
      */
     @POST
     @Path("/{collection}")
+    @Produces("text/xml")
     public Response postDeposit(@PathParam("collection") String collection) {
         DepositRequest deposit = null;
         try {
@@ -331,12 +348,16 @@ public class SwordResource extends BaseRestResource {
                         m_servletRequest);
             }
             deposit.setFile(tempFile);
-            DepositResponse depositResponse = m_sword.doDeposit(deposit.getDeposit(), authzContext);
-            System.err.println(depositResponse.marshall());
-            Response response = Response.status(depositResponse.getHttpResponse())
-                    .header(HttpHeaders.LOCATION, depositResponse.getLocation())
+            String location = null;
+            Entry entry = m_sword.doDeposit(deposit.getDeposit(), authzContext);
+            for (Link link: entry.getLinks()){
+            	if (link.isDescription()) location = link.getHref().toString();
+            }
+
+            Response response = Response.status(HttpStatus.SC_CREATED)
+                    .header(HttpHeaders.LOCATION, location)
                     .header(HttpHeaders.CONTENT_TYPE, AbstractDepositResource.ATOM_CONTENT_TYPE)
-                    .entity(depositResponse.marshall()).build();
+                    .entity(entry).build();
             return response;
         } catch (IOException e) {
         	System.err.println(e.toString());

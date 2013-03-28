@@ -3,16 +3,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -20,18 +21,17 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
+import javax.xml.bind.JAXBException;
 
 import org.fcrepo.server.Context;
 import org.fcrepo.server.Module;
 import org.fcrepo.server.PackageProxy;
 import org.fcrepo.server.Server;
-import org.fcrepo.server.access.Access;
 import org.fcrepo.server.access.DefaultAccess;
 import org.fcrepo.server.config.Parameter;
 import org.fcrepo.server.errors.InitializationException;
 import org.fcrepo.server.errors.ModuleInitializationException;
 import org.fcrepo.server.errors.ServerInitializationException;
-import org.fcrepo.server.management.Management;
 import org.fcrepo.server.management.ManagementModule;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -41,17 +41,13 @@ import org.jdom.input.SAXBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.purl.sword.atom.Entry;
-import org.purl.sword.atom.Link;
-import org.purl.sword.base.SWORDEntry;
-import org.purl.sword.base.SWORDException;
-import org.purl.sword.base.ServiceDocument;
-import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
 import edu.columbia.libraries.sword.DepositHandler;
+import edu.columbia.libraries.sword.SWORDException;
+import edu.columbia.libraries.sword.xml.entry.Entry;
+import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.libraries.sword.xml.entry.Link;
 
 public class IntegrationTests {
 	
@@ -69,7 +65,7 @@ public class IntegrationTests {
     @Before
     public void setUp()
     		throws ServerInitializationException, ModuleInitializationException, NoSuchFieldException,
-    		SecurityException, IllegalArgumentException, IllegalAccessException, SWORDException {
+    		SecurityException, IllegalArgumentException, IllegalAccessException, SWORDException, JAXBException {
     	depositURI = "http://fedora.info/deposit";
     	limitedDepositURI = depositURI + "/limited";
     	Server server = mock(Server.class, "mock.fcrepo.server");
@@ -642,16 +638,14 @@ public class IntegrationTests {
 		};
 	}
 	
-	public static SWORDEntry getMockEntry() {
-    	Link link = new Link();
-    	link.setRel("edit");
-    	link.setHref("http://localhost:8080/expected");
+	public static Entry getMockEntry() {
+    	Link link = new Link(URI.create("http://localhost:8080/expected"), "edit");
     	final ArrayList<Link> links = new ArrayList<Link>(1);
     	links.add(link);
-    	return new SWORDEntry(){
+    	return new Entry(){
     		@Override
-    		public Iterator<Link> getLinks() {
-    			return links.iterator();
+    		public List<Link> getLinks() {
+    			return links;
     		}
     		@Override
     		public String getId() {

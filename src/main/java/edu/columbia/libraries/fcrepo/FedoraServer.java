@@ -1,34 +1,22 @@
 package edu.columbia.libraries.fcrepo;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
-import nu.xom.Document;
-import nu.xom.Serializer;
-
 import org.fcrepo.server.Context;
-import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.management.Management;
-import org.purl.sword.atom.Link;
+import org.fcrepo.server.storage.DOManager;
 import org.purl.sword.base.AtomDocumentResponse;
 import org.purl.sword.base.Deposit;
-import org.purl.sword.base.DepositResponse;
-import org.purl.sword.base.SWORDAuthenticationException;
-import org.purl.sword.base.SWORDEntry;
-import org.purl.sword.base.SWORDErrorException;
-import org.purl.sword.base.SWORDException;
-import org.purl.sword.base.ServiceDocument;
 
 import edu.columbia.libraries.sword.DepositHandler;
+import edu.columbia.libraries.sword.SWORDException;
 import edu.columbia.libraries.sword.SWORDServer;
 import edu.columbia.libraries.sword.impl.AtomEntryRequest;
 import edu.columbia.libraries.sword.impl.DefaultDepositHandler;
-import edu.columbia.libraries.sword.impl.DepositRequest;
 import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
+import edu.columbia.libraries.sword.xml.entry.Entry;
+import edu.columbia.libraries.sword.xml.service.ServiceDocument;
 
 
 public class FedoraServer implements SWORDServer {
@@ -39,9 +27,9 @@ public class FedoraServer implements SWORDServer {
 
     private Map<String, DepositHandler> m_handlers;
     
-    private Management m_management;
+    private DOManager m_management;
 
-    public FedoraServer(Management manager, Map<String, DepositHandler> handlers) {
+    public FedoraServer(DOManager manager, Map<String, DepositHandler> handlers) {
         m_handlers = handlers;
         m_management = manager;
     }
@@ -59,8 +47,7 @@ public class FedoraServer implements SWORDServer {
     }
 
     public ServiceDocument doServiceDocument(ServiceDocumentRequest sdr, Context authzContext)
-            throws SWORDAuthenticationException, SWORDErrorException,
-            SWORDException {
+            throws SWORDException {
         //TODO this requires read authZ on the service doc
         String onBehalfOf = sdr.getOnBehalfOf();
         if (onBehalfOf == null) {
@@ -78,9 +65,8 @@ public class FedoraServer implements SWORDServer {
         }
     }
 
-    public DepositResponse doDeposit(Deposit deposit, Context context)
-            throws SWORDAuthenticationException, SWORDErrorException,
-            SWORDException {
+    public Entry doDeposit(Deposit deposit, Context context)
+            throws SWORDException {
         //TODO this requires ingest/create authZ for a new resource
         String location = deposit.getLocation();
         if (location.endsWith("/")){ // trim ending slash
@@ -101,32 +87,15 @@ public class FedoraServer implements SWORDServer {
                 handler = h;
             }
         }
-        if (handler == null) handler = new DefaultDepositHandler(null);
-        SWORDEntry entry = null;
-        entry = handler.ingestDeposit(new FedoraDeposit(deposit, collection, context), serviceDoc, context);
-        DepositResponse response = new DepositResponse(Deposit.CREATED);
-        response.setEntry(entry);
-        Iterator<Link> links = entry.getLinks();
-        while(links.hasNext()) {
-            Link _link = links.next();
-            if ("edit".equals(_link.getRel())){
-                response.setLocation(_link.getHref());
-                break;
-            }
-        }
+        if (handler == null) handler = new DefaultDepositHandler(m_management);
+        Entry entry = null;
+        FedoraDeposit fDeposit = new FedoraDeposit(deposit, collection, context);
+        entry = handler.ingestDeposit(fDeposit, serviceDoc, context);
+
         // cache response
         File collectionDir = new File(getEntryStoreLocation(serviceDoc), collection.replaceAll(":", "_"));
         if (!collectionDir.exists()) collectionDir.mkdirs();
-        try {
-        FileOutputStream cacheOut = new FileOutputStream(new File(collectionDir, entry.getId().replaceAll(":", "_") + ".xml"));
-        Serializer ser = new Serializer(cacheOut, "UTF-8");
-        ser.setIndent(3);
-        Document doc = new Document(entry.marshall());
-        ser.write(doc);
-        } catch (IOException ioe) {
-            throw new SWORDException(ioe.getMessage(), ioe);
-        }
-        return response;
+        return entry;
     }
 
     private String getEntryStoreLocation(ServiceDocument serviceDoc) {
@@ -134,8 +103,7 @@ public class FedoraServer implements SWORDServer {
     }
 
     public AtomDocumentResponse doAtomDocument(AtomEntryRequest adr, Context authzContext)
-            throws SWORDAuthenticationException, SWORDErrorException,
-            SWORDException {
+            throws SWORDException {
         return null;
     }
 

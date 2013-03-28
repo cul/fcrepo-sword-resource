@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+   <entry xmlns="http://www.w3.org/2005/Atom"
+	 xmlns:sword="http://purl.org/net/sword/">
+     <title>My Deposit</title>
+     <id>info:something:1</id>
+
+     <updated>2008-08-18T14:27:08Z</updated>
+     <author><name>jbloggs</name></author>
+     <summary type="text">A summary</summary>
+     <sword:userAgent>MyJavaClient/0.1 Restlet/2.0</sword:userAgent>
+     <source>
+       <generator uri="http://www.myrepository.ac.uk/engine" version="1.0"/>
+     </source>
+
+     <content type="application/zip"
+        src="http://www.myrepository.ac.uk/geography-collection/deposit1.zip"/>	
+     <sword:packaging>http://purl.org/net/sword-types/mets/dspace</sword:packaging>
+     <link rel="edit"
+        href="http://www.myrepository.ac.uk/geography-collection/atom/my_deposit.atom" />
+  </entry>

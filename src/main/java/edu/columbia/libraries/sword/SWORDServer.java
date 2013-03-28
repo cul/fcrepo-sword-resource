@@ -5,15 +5,11 @@ import java.util.Map;
 import org.fcrepo.server.Context;
 import org.purl.sword.base.AtomDocumentResponse;
 import org.purl.sword.base.Deposit;
-import org.purl.sword.base.DepositResponse;
-import org.purl.sword.base.SWORDAuthenticationException;
-import org.purl.sword.base.SWORDErrorException;
-import org.purl.sword.base.SWORDException;
-import org.purl.sword.base.ServiceDocument;
 
 import edu.columbia.libraries.sword.impl.AtomEntryRequest;
-import edu.columbia.libraries.sword.impl.DepositRequest;
 import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
+import edu.columbia.libraries.sword.xml.entry.Entry;
+import edu.columbia.libraries.sword.xml.service.ServiceDocument;
 
 
 public interface SWORDServer {
@@ -32,7 +28,7 @@ public interface SWORDServer {
      * @return The ServiceDocument representing the service document
      */
     public ServiceDocument doServiceDocument(ServiceDocumentRequest sdr, Context authzContext)
-        throws SWORDAuthenticationException, SWORDErrorException, SWORDException;
+        throws SWORDException;
 
     /**
      * Answer a SWORD deposit
@@ -47,8 +43,8 @@ public interface SWORDServer {
      *
      * @return The response to the deposit
      */
-    public DepositResponse doDeposit(Deposit deposit, Context authzContext)
-        throws SWORDAuthenticationException, SWORDErrorException, SWORDException;
+    public Entry doDeposit(Deposit deposit, Context authzContext)
+        throws SWORDException;
 
     /**
      * Answer a request for an entry document
@@ -64,7 +60,7 @@ public interface SWORDServer {
      * @return The response to the atom document request
      */
     public AtomDocumentResponse doAtomDocument(AtomEntryRequest adr, Context authzContext)
-        throws SWORDAuthenticationException, SWORDErrorException, SWORDException;
+        throws SWORDException;
 
     /**
      * Set the deposit handlers

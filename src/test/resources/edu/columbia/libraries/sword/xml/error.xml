@@ -1,0 +1,19 @@
+<sword:error xmlns="http://www.w3.org/2005/Atom"
+       xmlns:sword="http://purl.org/net/sword/"
+       xmlns:arxiv="http://arxiv.org/schemas/atom"
+       href="http://example.org/errors/BadManifest">
+  <author>
+    <name>Example repository</name>
+  </author>
+  <title>ERROR</title>
+  <updated>2008-02-19T09:34:27Z</updated>
+
+  <generator uri="https://example.org/sword-app/"
+               version="0.9">sword@example.org</generator>
+
+  <summary>The manifest could be parsed, but was not valid - 
+  no technical metadata was provided.</summary>
+  <sword:treatment>processing failed</sword:treatment>
+  <link rel="alternate" href="https://arxiv.org/help" type="text/html"/>
+
+</sword:error>

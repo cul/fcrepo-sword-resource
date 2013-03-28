@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+ <entry xmlns="http://www.w3.org/2005/Atom"
+	 xmlns:sword="http://purl.org/net/sword/">
+   <sword:noOp>true</sword:noOp>
+   <sword:verboseDescription>
+   Does collection exist? True.
+   User authenticates? True.
+   User: jbloggs
+   User has rights to collection? True. 
+   </sword:verboseDescription>
+   <title>My Deposit</title>
+   <id>info:something:1</id>
+   <updated>2008-08-18T14:27:08Z</updated>
+   <author><name>jbloggs</name></author>
+
+   <summary type="text">A summary</summary>
+   <content type="text/html"
+        src="http://www.myrepository.ac.uk/fdibner/workbench/dummy_deposit"/>
+   <link rel="edit-media"
+        href="http://www.myrepository.ac.uk/geography/dummy_deposit.zip"/>
+   <link rel="edit"
+        href="http://www.myrepository.ac.uk/geography-collection/atom/dummy_deposit.atom" />
+	
+   <sword:userAgent>RepoGateway/1.1 PythonLibHttp2/2.5</sword:userAgent>
+   <generator uri="http://www.myrepository.ac.uk/sword-plugin" version="1.0"/>
+   <sword:treatment>Unpacked. JPEG contents converted to JPEG2000.</sword:treatment>
+</entry>

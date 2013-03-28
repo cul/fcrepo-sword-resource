@@ -25,6 +25,10 @@ public abstract class SWORDRequest {
     protected String m_onBehalfOf;
     
     protected boolean m_proxied;
+    
+    public SWORDRequest() {
+    	
+    }
 
     public SWORDRequest(HttpServletRequest request) {
         m_authenticated = SWORDRequest.setCredentials(this, request);

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+ <entry xmlns="http://www.w3.org/2005/Atom"
+ 	xmlns:sword="http://purl.org/net/sword/">
+   <title>My Deposit</title>
+   <id>info:something:1</id>
+   <updated>2008-08-18T14:27:08Z</updated>
+   <author><name>jbloggs</name></author>
+   <contributor><name>fdibner</name></contributor>
+
+   <summary type="text">A summary</summary>
+   <!-- In this case, the package has been placed on the workbench of the On-Behalf-Of user -->
+   <content type="text/html"
+        src="http://www.myrepository.ac.uk/fdibner/workbench/my_deposit"/>
+   <link rel="edit-media"
+        href="http://www.myrepository.ac.uk/geography/my_deposit.zip"/>
+   <link rel="edit"
+        href="http://www.myrepository.ac.uk/geography-collection/atom/my_deposit.atom" />
+   
+   <sword:userAgent>RepoGateway/1.2</sword:userAgent>
+   <generator uri="http://www.myrepository.ac.uk/engine" version="1.0"/>
+   <sword:treatment>Treatment description</sword:treatment>
+</entry>
