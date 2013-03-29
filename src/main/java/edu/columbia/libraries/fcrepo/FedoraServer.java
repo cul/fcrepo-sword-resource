@@ -8,6 +8,7 @@ import java.util.Map;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.management.Management;
+import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.storage.DOManager;
 import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.utilities.DCFields;
@@ -35,11 +36,16 @@ public class FedoraServer implements SWORDServer {
     private Map<String, DepositHandler> m_handlers;
     
     private DOManager m_management;
+    
+    private ResourceIndex m_resourceIndex;
+    
+    private String m_rel;
 
-    public FedoraServer(DOManager manager, Map<String, DepositHandler> handlers) {
-        m_handlers = handlers;
+    public FedoraServer(DOManager manager) {
         m_management = manager;
     }
+    
+    
     
     public void setDepositHandlers(Map<String, DepositHandler> handlers) {
     	m_handlers = handlers;

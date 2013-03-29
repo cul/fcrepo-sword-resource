@@ -1,4 +1,4 @@
-package edu.columbia.libraries.fcrepo;
+package edu.columbia.libraries.sword;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,6 +52,7 @@ import org.purl.sword.base.SWORDException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.columbia.libraries.fcrepo.FedoraServer;
 import edu.columbia.libraries.sword.DepositHandler;
 import edu.columbia.libraries.sword.SWORDServer;
 import edu.columbia.libraries.sword.impl.AtomEntryRequest;
@@ -64,8 +65,8 @@ import edu.columbia.libraries.sword.xml.entry.Link;
 
 
 @Path("/")
-public class SwordResource extends BaseRestResource {
-    private static final Logger log = LoggerFactory.getLogger(SwordResource.class.getName());
+public class SWORDResource extends BaseRestResource {
+    private static final Logger log = LoggerFactory.getLogger(SWORDResource.class.getName());
     
     public static final String ATOM_CONTENT_TYPE = "application/atom+xml; charset=UTF-8";
     public static final String ATOMSVC_CONTENT_TYPE = "application/atomsvc+xml; charset=UTF-8";
@@ -94,9 +95,9 @@ public class SwordResource extends BaseRestResource {
     
     Set<String> m_collectionPids = null;
 
-    public SwordResource(Server server) throws JAXBException {
+    public SWORDResource(Server server) throws JAXBException {
     	super(server);
-        m_sword = new FedoraServer(server.getBean(DOManager.class), null);
+        m_sword = new FedoraServer(server.getBean(DOManager.class));
         m_authorization = server.getBean(Authorization.class);
 		m_bind = JAXBContext.newInstance( ServiceDocument.class, Entry.class, SwordError.class );
 

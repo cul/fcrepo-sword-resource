@@ -18,11 +18,12 @@ import org.purl.sword.base.ServiceDocumentRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.columbia.libraries.sword.SWORDResource;
 import edu.columbia.libraries.sword.xml.SwordError;
 
 
 public class AbstractDepositResource {
-    private static final Logger log = LoggerFactory.getLogger(SwordResource.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(SWORDResource.class.getName());
 
     public static final String ATOM_CONTENT_TYPE = "application/atom+xml; charset=UTF-8";
     public static final String ATOMSVC_CONTENT_TYPE = "application/atomsvc+xml; charset=UTF-8";
