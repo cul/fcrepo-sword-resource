@@ -3,10 +3,14 @@ package edu.columbia.libraries.sword;
 import java.util.StringTokenizer;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.UriInfo;
 
+import org.fcrepo.server.access.RepositoryInfo;
 import org.fcrepo.utilities.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import edu.columbia.libraries.sword.xml.entry.Generator;
 
 
 public abstract class SWORDRequest {
@@ -25,6 +29,10 @@ public abstract class SWORDRequest {
     protected String m_onBehalfOf;
     
     protected boolean m_proxied;
+    
+    protected UriInfo m_base;
+    
+    protected Generator m_generator;
     
     public SWORDRequest() {
     	
@@ -92,6 +100,30 @@ public abstract class SWORDRequest {
     
     public boolean isProxied() {
     	return m_proxied;
+    }
+    
+    public void setBaseUri(UriInfo base) {
+    	m_base = base;
+    }
+    
+    public UriInfo getBaseUri(){
+    	return m_base;
+    }
+    
+    public void setGenerator(Generator generator) {
+    	m_generator = generator;
+    }
+    
+    public Generator getGenerator() {
+    	return m_generator;
+    }
+    
+    /**
+     * Utility method to set up generator
+     * @param info
+     */
+    public void setGenerator(RepositoryInfo info) {
+    	m_generator = new Generator(info.repositoryName, info.repositoryVersion);
     }
 
     public static boolean setCredentials(SWORDRequest sr, HttpServletRequest request) {

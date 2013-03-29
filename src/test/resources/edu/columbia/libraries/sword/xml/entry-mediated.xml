@@ -17,6 +17,8 @@
         href="http://www.myrepository.ac.uk/geography-collection/atom/my_deposit.atom" />
    
    <sword:userAgent>RepoGateway/1.2</sword:userAgent>
-   <generator uri="http://www.myrepository.ac.uk/engine" version="1.0"/>
+   <source>
+     <generator uri="http://www.myrepository.ac.uk/engine" version="1.0"/>
+   </source>
    <sword:treatment>Treatment description</sword:treatment>
 </entry>

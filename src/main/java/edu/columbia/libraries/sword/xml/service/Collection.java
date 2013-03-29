@@ -13,6 +13,9 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.fcrepo.server.utilities.DCField;
+import org.fcrepo.server.utilities.DCFields;
+
 @XmlRootElement(name = "collection", namespace="http://www.w3.org/2007/app")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Collection {
@@ -21,13 +24,13 @@ public class Collection {
 	public String href;
 	
 	@XmlElement(name = "title", namespace = "http://www.w3.org/2005/Atom")
-	public String title;
+	public List<String> title;
 	
 	@XmlElement(name = "accept", namespace="http://www.w3.org/2007/app")
 	Set<String> accepts;
 	
 	@XmlElement(name = "collectionPolicy", namespace = "http://purl.org/net/sword/")
-	public String collectionPolicy;
+	public List<String> collectionPolicy;
 
 	@XmlElement(name = "mediation", namespace = "http://purl.org/net/sword/")
 	public boolean mediation;
@@ -36,7 +39,7 @@ public class Collection {
 	public String treatment;
 
 	@XmlElement(name = "abstract", namespace = "http://purl.org/dc/terms/")
-	public String dcAbstract;
+	public List<String> dcAbstract;
 	
 	@XmlElementRef
 	List<AcceptPackaging> acceptPackagings;
@@ -46,6 +49,9 @@ public class Collection {
 	
 	public Collection() {
 		this.accepts = new HashSet<String>();
+		this.title = new ArrayList<String>(1);
+		this.dcAbstract = new ArrayList<String>(1);
+		this.collectionPolicy = new ArrayList<String>(1);
 		this.acceptPackagings = new ArrayList<AcceptPackaging>();
 	}
 	
@@ -94,5 +100,18 @@ public class Collection {
     	if (this.href == null) return that.href == null;
     	return this.href.equals(that.href);
     }
+    
+    public void setDCFields(DCFields dcf) {
+		List<DCField> fields;
+		fields = dcf.titles();
+		if (fields.size() == 0){
+			title.add( "FCRepo Collection " + href);
+		}
+		fields = dcf.descriptions();
+		for (DCField field: fields) this.dcAbstract.add(field.getValue());
+		fields = dcf.rights();
+		for (DCField field: fields) this.collectionPolicy.add(field.getValue());
+    }
+
     
 }

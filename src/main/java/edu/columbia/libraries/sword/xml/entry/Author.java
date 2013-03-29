@@ -16,6 +16,14 @@ public class Author {
     	
     }
     
+    public void setName(String name) {
+    	this.name = name;
+    }
+    
+    public String getName() {
+    	return this.name;
+    }
+    
     @Override
     public boolean equals(Object object) {
     	if (object instanceof Author) {

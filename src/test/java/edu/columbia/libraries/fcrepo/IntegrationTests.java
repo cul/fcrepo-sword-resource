@@ -31,6 +31,7 @@ import org.fcrepo.server.access.DefaultAccess;
 import org.fcrepo.server.config.Parameter;
 import org.fcrepo.server.errors.InitializationException;
 import org.fcrepo.server.errors.ModuleInitializationException;
+import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.errors.ServerInitializationException;
 import org.fcrepo.server.management.ManagementModule;
 import org.jdom.Document;
@@ -41,10 +42,13 @@ import org.jdom.input.SAXBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.BeansException;
 import org.springframework.context.support.GenericApplicationContext;
 
 import edu.columbia.libraries.sword.DepositHandler;
 import edu.columbia.libraries.sword.SWORDException;
+import edu.columbia.libraries.sword.SWORDResource;
+import edu.columbia.libraries.sword.impl.DepositRequest;
 import edu.columbia.libraries.sword.xml.entry.Entry;
 import edu.columbia.libraries.sword.xml.service.ServiceDocument;
 import edu.columbia.libraries.sword.xml.entry.Link;
@@ -60,12 +64,14 @@ public class IntegrationTests {
     
     private String limitedDepositURI;
     
-    private SwordResource test;
+    private SWORDResource test;
     
     @Before
     public void setUp()
-    		throws ServerInitializationException, ModuleInitializationException, NoSuchFieldException,
-    		SecurityException, IllegalArgumentException, IllegalAccessException, SWORDException, JAXBException {
+    		throws NoSuchFieldException,
+    		SecurityException, IllegalArgumentException,
+    		IllegalAccessException, SWORDException,
+    		JAXBException, BeansException, ServerException {
     	depositURI = "http://fedora.info/deposit";
     	limitedDepositURI = depositURI + "/limited";
     	Server server = mock(Server.class, "mock.fcrepo.server");
@@ -81,18 +87,18 @@ public class IntegrationTests {
     	PackageProxy.setApplicationContext(server, context);
     	PackageProxy.setParameters(server, parameters);
         
-    	test = new SwordResource(server);
+    	test = new SWORDResource(server);
     	DepositHandler handler = mock(DepositHandler.class);
     	when(handler.handles(anyString(), anyString())).thenReturn(true);
     	Map<String, DepositHandler> handlers = new HashMap<String, DepositHandler>(1);
     	handlers.put("test", handler);
 
-    	when(handler.ingestDeposit(any(FedoraDeposit.class), any(ServiceDocument.class), any(Context.class))).thenReturn(getMockEntry());
+    	when(handler.ingestDeposit(any(DepositRequest.class), any(Context.class))).thenReturn(getMockEntry());
     	test.setDepositHandlers(handlers);
     	ServletContext sContext = mock(ServletContext.class);
     	when(sContext.getInitParameter("maxUploadSize")).thenReturn(Integer.toString(1024*1024));
     	when(sContext.getInitParameter("authentication-method")).thenReturn("None");
-    	test.m_context = sContext;
+    	test.setServletContext(sContext);
     }
     
     @After
@@ -520,7 +526,7 @@ public class IntegrationTests {
 		assertNotNull("Missing Location in header", tLocation);
 		String [] parts = tLocation.split("/");
 		
-		response = test.getDeposit(parts[parts.length - 1]);
+		response = test.getDepositEntry(parts[parts.length - 2], parts[parts.length - 1]);
 		
 		tStatus = response.getStatus();
 		assertEquals("Get returned a non 200 result", 200, tStatus);

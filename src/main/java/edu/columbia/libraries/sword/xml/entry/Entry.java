@@ -28,29 +28,32 @@ import edu.columbia.libraries.sword.xml.entry.Generator;
 @XmlRootElement(name = "entry", namespace = "http://www.w3.org/2005/Atom")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Entry {
-    @XmlElement(name = "title")
-    public String title;
+    @XmlElement(name = "title", namespace = "http://www.w3.org/2005/Atom")
+    List<String> title;
 
     @XmlElement(name = "id", namespace = "http://www.w3.org/2005/Atom")
-    public String id;
+    String id;
     
     @XmlElement(name = "published", namespace = "http://www.w3.org/2005/Atom")
-    private String published;
+    String published;
     
     @XmlElement(name = "updated", namespace = "http://www.w3.org/2005/Atom")
-    private String updated;
+    String updated;
     
     @XmlElementRef
-    private Set<Author> authors;
+    Set<Author> authors;
     
     @XmlElementRef
-    private Set<Contributor> contributors;
+    Set<Contributor> contributors;
     
 	@XmlElement(name = "userAgent", namespace = "http://purl.org/net/sword/")
-	public String userAgent;
+	String userAgent;
 	
-	@XmlElement
-	public Content content;
+	@XmlElement(name = "summary", namespace = "http://purl.org/net/sword/")
+	List<String> summary;
+	
+	@XmlElementRef
+	Content content;
 	
 	@XmlElementRef
 	List<Link> links;
@@ -58,10 +61,18 @@ public class Entry {
 	@XmlElementRef
 	Source source;
 	
+	@XmlElement(name = "packaging", namespace = "http://purl.org/net/sword/")
+	public String packaging;
+	
+	public boolean noOp;
+	
+	
 	public Entry() {
 		this.links = new ArrayList<Link>(2);
 		this.contributors = new HashSet<Contributor>(1);
 		this.authors = new HashSet<Author>(1);
+		this.title = new ArrayList<String>();
+		this.summary = new ArrayList<String>(1);
 	}
 	
 	public Entry(String id) {
@@ -69,11 +80,11 @@ public class Entry {
 		this.id = id;
 	}
 	
-	public void addDescriptionLink(String href) {
+	public void addEditLink(String href) {
 		links.add(Link.getDescriptionLink(href));
 	}
 	
-	public void addMediaLink(String href) {
+	public void addEditMediaLink(String href) {
 		links.add(Link.getMediaLink(href));
 	}
 	
@@ -90,7 +101,7 @@ public class Entry {
 	}
 
 	@XmlElement(name = "treatment", namespace = "http://purl.org/net/sword/")
-	public String treatment;
+	public String treatment = "Ingested into FCRepo";
 	
 	public void setGenerator(String generator, String version) {
 		this.source = new Source();
@@ -112,6 +123,14 @@ public class Entry {
     public boolean removeAuthor(String author) {
     	return authors.remove(new Author(author));
     }
+    
+    public Set<String> getAuthors() {
+    	HashSet<String> authors = new HashSet<String>(this.authors.size());
+    	for (Author author: this.authors) {
+    		authors.add(author.getName());
+    	}
+    	return authors;
+    }
 
     public boolean addContributor(String contributor) {
     	return contributors.add(new Contributor(contributor));
@@ -121,39 +140,110 @@ public class Entry {
     	return contributors.remove(new Contributor(contributor));
     }
     
-    public void setDepositInfo(FedoraDeposit deposit){
-		//if (deposit.getPackaging() != null && deposit.getPackaging().trim().length() != 0) {
-		//	this.setPackaging(deposit.getPackaging());
-		//}	
-		// this.setNoOp(deposit.isNoOp());
+    public Set<String> getContributors() {
+    	HashSet<String> contributors = new HashSet<String>(this.contributors.size());
+    	for (Contributor contributor: this.contributors) {
+    		contributors.add(contributor.getName());
+    	}
+    	return contributors;
+    }
+
+    public void setPackaging(String packaging) {
+    	this.packaging = packaging;
+    }
+    
+    public String getPackaging() {
+    	return this.packaging;
+    }
+    
+    public boolean addTitle(String title) {
+    	return this.title.add(title);
+    }
+    
+    public boolean removeTitle(String title) {
+    	return this.title.remove(title);
+    }
+    
+    public List<String > getTitles() {
+    	return this.title;
+    }
+    
+    public boolean addSummary(String summary) {
+    	return this.summary.add(summary);
+    }
+    
+    public boolean removeSummary(String summary) {
+    	return this.summary.remove(summary);
+    }
+    
+    public List<String> getSummary(){
+    	return this.summary;
+    }
+    
+    public void setNoOp(boolean noOp) {
+    	this.noOp = noOp;
+    }
+    
+    public boolean getNoOp(){
+    	return this.noOp;
+    }
+    
+    public void setContent(String href, String contentType) {
+    	Content content = new Content();
+    	content.src = href;
+    	content.type = contentType;
+    	this.content = content;
+    }
+    
+    public Content getContent() {
+    	return this.content;
+    }
+    
+    public void setDepositInfo(DepositRequest deposit){
+    	
+		if (deposit.getPackaging() != null) {
+			String packaging = deposit.getPackaging().trim();
+			if (packaging.length() > 0) setPackaging(packaging);
+		}	
+		this.setNoOp(deposit.isNoOp());
 		
-		this.addAuthor(deposit.getUsername());
+		this.addAuthor(deposit.getUserName());
 		if (deposit.getOnBehalfOf() != null) {
 			this.addContributor(deposit.getOnBehalfOf());
 		}
-		Content content = new Content();
-		content.type = deposit.getContentType();
-		content.src = deposit.getLocation();
-		this.content = content;
-        this.id = deposit.getDepositPid();
     }
         
     public void setDCFields(DCFields dcf) {
-    	for (DCField field :dcf.subjects()) {
-    		//TODO implement
-    		//this.addCategory(field.getValue());
+    	for (DCField field :dcf.contributors()) {
+    		this.addContributor(field.getValue());
     	}
-    	for (DCField field: dcf.rights()) {
-    		//TODO implement rights on atom:source
-    		//this.addCollectionPolicy(field.getValue());
+    	for (DCField field: dcf.creators()) {
+    		this.addAuthor(field.getValue());
     	}
     	for (DCField field: dcf.descriptions()) {
-    		//TODO implement summary on this
-    		//this.appendSummary(field.getValue());
+    		this.addSummary(field.getValue());
     	}
     	for (DCField field: dcf.titles()) {
-    		this.title += " " + field.getValue();
+    		this.addTitle(field.getValue());
     	}
     	
     }
+    
+    public DCFields getDCFields() {
+    	DCFields result = new DCFields();
+    	for (String title: this.title) {
+    		result.titles().add(new DCField(title));
+    	}
+    	for (String creator: getAuthors()) {
+    		result.creators().add(new DCField(creator));
+    	}
+    	for (String contrib: getContributors()) {
+    		result.contributors().add(new DCField(contrib));
+    	}
+    	for (String summary: getSummary()) {
+    		result.descriptions().add(new DCField(summary));
+    	}
+    	return result;
+    }
+    
 }

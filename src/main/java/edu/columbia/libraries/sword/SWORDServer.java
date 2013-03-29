@@ -3,6 +3,7 @@ package edu.columbia.libraries.sword;
 import java.util.Map;
 
 import org.fcrepo.server.Context;
+import org.fcrepo.server.errors.ServerException;
 import org.purl.sword.base.AtomDocumentResponse;
 import org.purl.sword.base.Deposit;
 
@@ -44,9 +45,10 @@ public interface SWORDServer {
      *            This will be dealt with by sending a HTTP 500 Server Exception
      *
      * @return The response to the deposit
+     * @throws ServerException 
      */
     public Entry doDeposit(Deposit deposit, Context authzContext)
-        throws SWORDException;
+        throws SWORDException, ServerException;
 
     /**
      * Answer a request for an entry document

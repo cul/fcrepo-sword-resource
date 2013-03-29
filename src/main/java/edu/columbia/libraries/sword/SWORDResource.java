@@ -6,12 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -30,38 +28,35 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.Server;
+import org.fcrepo.server.access.Access;
+import org.fcrepo.server.access.RepositoryInfo;
 import org.fcrepo.server.errors.InitializationException;
+import org.fcrepo.server.errors.ServerException;
+import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.rest.BaseRestResource;
 import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
-import org.purl.sword.base.AtomDocumentResponse;
-import org.purl.sword.base.ChecksumUtils;
-import org.purl.sword.base.DepositResponse;
-import org.purl.sword.base.ErrorCodes;
-import org.purl.sword.base.SWORDAuthenticationException;
-import org.purl.sword.base.SWORDErrorException;
-import org.purl.sword.base.SWORDException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 
-import edu.columbia.libraries.fcrepo.FedoraServer;
 import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.SWORDServer;
 import edu.columbia.libraries.sword.impl.AtomEntryRequest;
 import edu.columbia.libraries.sword.impl.DepositRequest;
 import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.libraries.sword.impl.fcrepo.FedoraService;
+import edu.columbia.libraries.sword.utils.ChecksumUtils;
 import edu.columbia.libraries.sword.xml.SwordError;
+import edu.columbia.libraries.sword.xml.entry.Entry;
+import edu.columbia.libraries.sword.xml.entry.Feed;
+import edu.columbia.libraries.sword.xml.entry.Generator;
 import edu.columbia.libraries.sword.xml.entry.Link;
+import edu.columbia.libraries.sword.xml.service.ServiceDocument;
 
 
 @Path("/")
@@ -79,15 +74,20 @@ public class SWORDResource extends BaseRestResource {
     @javax.ws.rs.core.Context
     protected ServletContext m_context;
 
+    @javax.ws.rs.core.Context
+    protected UriInfo m_uriInfo;
+
     private String m_authn;
 
     private int m_maxUpload;
 
     private File m_tempDir;
 
-    private SWORDServer m_sword;
+    private FedoraService m_sword;
     
     private Authorization m_authorization;
+    
+    private RepositoryInfo m_repoInfo;
     
     private JAXBContext m_bind;
 
@@ -95,16 +95,27 @@ public class SWORDResource extends BaseRestResource {
     
     Set<String> m_collectionPids = null;
 
-    public SWORDResource(Server server) throws JAXBException {
+    public SWORDResource(Server server) throws JAXBException, BeansException, ServerException {
     	super(server);
-        m_sword = new FedoraServer(server.getBean(DOManager.class));
+        m_sword = new FedoraService(server.getBean(DOManager.class), server.getBean(ResourceIndex.class), m_uriInfo);
         m_authorization = server.getBean(Authorization.class);
+        m_repoInfo = server.getBean(Access.class).describeRepository(ReadOnlyContext.EMPTY);
 		m_bind = JAXBContext.newInstance( ServiceDocument.class, Entry.class, SwordError.class );
-
     }
     
+    // testing convenience method
+    public void setServletContext(ServletContext context) {
+    	m_context = context;
+    }
+    
+    // testing convenience method
     public void setServletRequest(HttpServletRequest request) {
     	m_servletRequest = request;
+    }
+    
+    // testing convenience method
+    public void setUriInfo(UriInfo uriInfo) {
+    	m_uriInfo = uriInfo;
     }
     
     public void setDepositHandlers(Map<String, DepositHandler> handlers) {
@@ -174,7 +185,7 @@ public class SWORDResource extends BaseRestResource {
 
     }
 
-    public void setSword(SWORDServer sword) {
+    public void setSword(FedoraService sword) {
         m_sword = sword;
     }
 
@@ -192,33 +203,40 @@ public class SWORDResource extends BaseRestResource {
             return authnRequiredResponse(m_realm);
         }
     	try {
-    	Context authzContext;
-    	if (request.isProxied()){
-    		Context context = getContext();
-    		// do some authZ to see if this user is allowed to proxy
-    		//m_authorization.
-    		authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), request.getOnBehalfOf(), null, true);
-    	} else {
-    		authzContext = getContext();
-    	}
-    	
-    	ServiceDocument atomsvc = m_sword.doServiceDocument(request, authzContext);
-    	Response response = Response.status(200)
-    			.entity(atomsvc)
-    			.header("Content-Type", "application/atom+xml; charset=UTF-8")
-    			.build();
-    	return response;
-    	} catch (Exception e) {
-    		Response response = Response.status(500).build();
+    		Context authzContext;
+    		if (request.isProxied()){
+    			Context context = getContext();
+    			// do some authZ to see if this user is allowed to proxy
+    			//m_authorization.
+    			try {
+    				authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), request.getOnBehalfOf(), null, true);
+    			} catch (Exception e) {
+    				throw new SWORDException(SWORDException.MEDIATION_NOT_ALLOWED, e);
+    			}
+    		} else {
+    			authzContext = getContext();
+    		}
+
+    		ServiceDocument atomsvc = m_sword.getDefaultServiceDocument(authzContext);
+    		Response response = Response.status(200)
+    				.entity(atomsvc)
+    				.header("Content-Type", "application/atom+xml; charset=UTF-8")
+    				.build();
+    		return response;
+    	} catch (SWORDException e) {
+    		SwordError error = new SwordError();
+    		error.treatment = "Failed to retrieve service document.";
+    		error.generator = new Generator("FCRepo", "3.6");
+    		error.reason = e.reason;
+    		Response response = Response.status(e.status).entity(error).build();
     		return response;
     	}
-    	
     }
-    
+
     @GET
     @Path("/{collection}/service.atomsvc")
     @Produces("text/xml")
-    public Response getDefaultServiceDocument(@PathParam("collection") String collection) {
+    public Response getServiceDocument(@PathParam("collection") String collection) {
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
 
     	if (!request.authenticated() && authenticateWithBasic()) {
@@ -230,27 +248,29 @@ public class SWORDResource extends BaseRestResource {
     		Context context = getContext();
     		// do some authZ to see if this user is allowed to proxy
     		//m_authorization.
-    		authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), request.getOnBehalfOf(), null, true);
+    		try {
+				authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), request.getOnBehalfOf(), null, true);
+			} catch (Exception e) {
+				throw new SWORDException(SWORDException.MEDIATION_NOT_ALLOWED, e);
+			}
     	} else {
     		authzContext = getContext();
     	}
     	
-    	//TODO get the collection object and its DCFields
-    	//TODO get the accepts from all the handlers
-    	//TODO get the acceptPkgs from all the handlers
-    	//TODO build the service document
-    	
-    	ServiceDocument atomsvc = m_sword.doServiceDocument(collection, authzContext);
+    	ServiceDocument atomsvc = m_sword.getServiceDocument(collection, authzContext);
     	Response response = Response.status(200)
     			.entity(atomsvc)
     			.header("Content-Type", "application/atom+xml; charset=UTF-8")
     			.build();
     	return response;
-    	} catch (Exception e) {
-    		Response response = Response.status(500).build();
+    	} catch (SWORDException e) {
+    		SwordError error = new SwordError();
+    		error.treatment = "Failed to retrieve service document.";
+    		error.generator = new Generator("FCRepo", "3.6");
+    		error.reason = e.reason;
+    		Response response = Response.status(e.status).entity(error).build();
     		return response;
     	}
-    	
     }
     
     /**
@@ -268,7 +288,7 @@ public class SWORDResource extends BaseRestResource {
     @GET
     @Path("/{collection}")
     @Produces("text/xml")
-    public Response getDeposit(@PathParam("collection") String collection) {
+    public Response getFeed(@PathParam("collection") String collection) {
 
         AtomEntryRequest adr = new AtomEntryRequest(m_servletRequest);
         if (!adr.authenticated() && authenticateWithBasic()) {
@@ -285,27 +305,23 @@ public class SWORDResource extends BaseRestResource {
         	}
 
             // Generate the response
-            AtomDocumentResponse dr = m_sword.doAtomDocument(adr, authzContext);
+            Feed dr = m_sword.getEntryFeed(collection, null, authzContext);
 
             // Print out the Deposit Response
 
-            Response response = Response.status(dr.getHttpResponse())
-                    .entity(dr.marshall())
+            Response response = Response.status(200)
+                    .entity(dr)
                     .header("Content-Type", "application/atom+xml; charset=UTF-8")
                     .build();
             return response;
-        } catch (SWORDAuthenticationException sae) {
-            // Ask for credentials again
-            return authnRequiredResponse(m_realm);
         } catch (SWORDException se) {
-            return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+        	//TODO if this is an authn exception, send the right response
+        	if (se.status == 401) {
+                return authnRequiredResponse(m_realm);
+        	} else {
+                return Response.status(se.status)
                     .entity(se.toString()).build();
-        } catch (SWORDErrorException se) {
-            // Get the details and send the right SWORD error document
-            return errorResponse(se.getErrorURI(),
-                    se.getStatus(),
-                    se.getDescription(),
-                    m_servletRequest);
+        	}
         } catch (Exception e) {
             return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
                     .entity(e.toString()).build();
@@ -331,14 +347,17 @@ public class SWORDResource extends BaseRestResource {
         DepositRequest deposit = null;
         try {
             deposit = new DepositRequest(m_servletRequest);
-        } catch (SWORDErrorException e) {
-            return errorResponse(e.getErrorURI(),
+            deposit.setCollection(collection);
+            deposit.setBaseUri(m_uriInfo);
+            deposit.setGenerator(m_repoInfo);
+        } catch (SWORDException e) {
+            return errorResponse(e.reason,
                     HttpServletResponse.SC_BAD_REQUEST,
                     e.getMessage(),
                     m_servletRequest);
         }
         if ("reject".equals(deposit.getOnBehalfOf())){
-            return errorResponse(ErrorCodes.TARGET_OWNER_UKNOWN,
+            return errorResponse(SWORDException.OWNER_UNKNOWN.error,
                     HttpServletResponse.SC_FORBIDDEN,
                     "unknown use \"reject\"",
                     m_servletRequest);
@@ -358,7 +377,11 @@ public class SWORDResource extends BaseRestResource {
         	if (deposit.isProxied()){
                 Context context = getContext();
                 // do some authZ to see if this user is allowed to proxy
-                authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
+                try {
+					authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
+				} catch (Exception e) {
+					throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+				}
         	} else {
         		authzContext = getContext();
         	}
@@ -371,33 +394,42 @@ public class SWORDResource extends BaseRestResource {
                 while ((len = in.read(buf)) > -1){
                     out.write(buf, 0, len);
                 }
+            } catch (IOException e) {
+                return errorResponse(SWORDException.IO_ERROR.error,
+                        HttpServletResponse.SC_SERVICE_UNAVAILABLE,
+                        e.getMessage(),
+                        m_servletRequest);
             } finally {
-                if (out != null) {
-                    out.flush();
-                    out.close();
-                }
-                if (in != null ) in.close();
+            	try {
+            		if (out != null) {
+            			out.flush();
+            			out.close();
+            		}
+            		if (in != null ) in.close();
+            	} catch (IOException e) {
+            		e.printStackTrace();
+            	}
             }
             long fLen = tempFile.length();
             if ((m_maxUpload != -1) && (fLen > m_maxUpload)) {
-                return errorResponse(ErrorCodes.MAX_UPLOAD_SIZE_EXCEEDED,
+                return errorResponse(SWORDException.MAX_UPLOAD_SIZE_EXCEEDED.error,
                         HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
                         "Maximum upload size (" + m_maxUpload + ") exceeded by input (" + fLen + ")",
                         m_servletRequest);
             }
             String actualMD5 = ChecksumUtils.generateMD5(tempFile.getPath());
             log.debug("Received checksum header {}", deposit.getMD5());
-            log.debug("Received file checksum {}", actualMD5);
+            log.debug("Calculated file checksum {}", actualMD5);
             if (!actualMD5.equals(deposit.getMD5())){
                 log.debug("Bad MD5 for file. Aborting with appropriate error message");
-                return errorResponse(ErrorCodes.ERROR_CHECKSUM_MISMATCH,
+                return errorResponse(SWORDException.ERROR_CHECKSUM.error,
                         HttpServletResponse.SC_PRECONDITION_FAILED,
                         "Received upload MD5 (" + deposit.getMD5() + ") did not match actual (" + actualMD5 + ")",
                         m_servletRequest);
             }
             deposit.setFile(tempFile);
             String location = null;
-            Entry entry = m_sword.doDeposit(deposit.getDeposit(), authzContext);
+            Entry entry = m_sword.createEntry(deposit, authzContext);
             for (Link link: entry.getLinks()){
             	if (link.isDescription()) location = link.getHref().toString();
             }
@@ -407,38 +439,59 @@ public class SWORDResource extends BaseRestResource {
                     .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
                     .entity(entry).build();
             return response;
-        } catch (IOException e) {
-        	System.err.println(e.toString());
-            return errorResponse("http://purl.org/net/sword/error/IOException",
-                    HttpServletResponse.SC_SERVICE_UNAVAILABLE,
-                    e.getMessage(),
-                    m_servletRequest);
-        } catch (NoSuchAlgorithmException e) {
-        	System.err.println(e.toString());
-            return errorResponse("http://purl.org/net/sword/error/MD5Missing",
-                    HttpServletResponse.SC_SERVICE_UNAVAILABLE,
-                    e.getMessage(),
-                    m_servletRequest);
-        } catch (SWORDAuthenticationException e) {
-        	System.err.println(e.toString());
-            return authnRequiredResponse(m_realm);
-        } catch (SWORDErrorException e) {
-        	System.err.println(e.toString());
-            return errorResponse(e.getErrorURI(),
-                    e.getStatus(),
-                    e.getMessage(),
-                    m_servletRequest);
         } catch (SWORDException e) {
         	System.err.println(e.toString());
         	e.printStackTrace();
             return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
                     .entity(e.toString()).build();
-        } catch (Exception e) {
-        	e.printStackTrace();
-            return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-                    .entity(e.toString()).build();
         }
     }
+    
+    @GET
+    @Path("/{collection}/{deposit}")
+    @Produces("text/xml")
+    public Response getDepositEntry(
+    		@PathParam("collection") String collectionId,
+    		@PathParam("deposit") String depositId) {
+
+    	DepositRequest deposit = null;
+        try {
+        	deposit = new DepositRequest(m_servletRequest);
+        	deposit.setCollection(collectionId);
+        	deposit.setDepositId(depositId);
+        	deposit.setBaseUri(m_uriInfo);
+        	deposit.setGenerator(m_repoInfo);
+        	Context authzContext;
+        	if (deposit.isProxied()){
+        		Context context = getContext();
+        		// do some authZ to see if this user is allowed to proxy
+        		try {
+        			authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
+        		} catch (Exception e) {
+        			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+        		}
+        	} else {
+        		authzContext = getContext();
+        	}
+
+            String location = null;
+            Entry entry = m_sword.getEntry(deposit, authzContext);
+            for (Link link: entry.getLinks()){
+            	if (link.isDescription()) location = link.getHref().toString();
+            }
+
+            Response response = Response.status(HttpStatus.SC_CREATED)
+                    .header(HttpHeaders.LOCATION, location)
+                    .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
+                    .entity(entry).build();
+            return response;
+        } catch (SWORDException e) {
+            return errorResponse(e.reason,
+                    e.status,
+                    e.getMessage(),
+                    m_servletRequest);
+        }
+    }    
 
     /**
      * Utility method to decide if we are using HTTP Basic authentication
@@ -447,21 +500,6 @@ public class SWORDResource extends BaseRestResource {
      */
     protected boolean authenticateWithBasic() {
         return "Basic".equalsIgnoreCase(m_authn);
-    }
-
-    /**
-     * Utility method to construct the URL called for this Servlet
-     *
-     * @param req The request object
-     * @return The URL
-     */
-    protected static String getURL2(HttpServletRequest req) {
-        String reqUrl = req.getRequestURL().toString();
-        String queryString = req.getQueryString();
-        if (queryString != null) {
-            reqUrl += "?" + queryString;
-        }
-        return reqUrl;
     }
     
     public static Response authnRequiredResponse(String realm) {
@@ -473,9 +511,9 @@ public class SWORDResource extends BaseRestResource {
     }
 
 
-    public static Response errorResponse(String errorURI, int status, String summary, HttpServletRequest request) {
+    public static Response errorResponse(URI errorURI, int status, String summary, HttpServletRequest request) {
         SwordError sed = new SwordError();
-        sed.reason = URI.create(errorURI);
+        sed.reason = errorURI;
         sed.title = "ERROR";
         Calendar calendar = Calendar.getInstance();
         SimpleDateFormat zulu = new SimpleDateFormat(UTC_DATE_FORMAT);
