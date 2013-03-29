@@ -1,11 +1,16 @@
 package edu.columbia.libraries.fcrepo;
 
 import java.io.File;
+import java.net.URI;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.fcrepo.server.Context;
+import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.management.Management;
 import org.fcrepo.server.storage.DOManager;
+import org.fcrepo.server.storage.DOReader;
+import org.fcrepo.server.utilities.DCFields;
 import org.purl.sword.base.AtomDocumentResponse;
 import org.purl.sword.base.Deposit;
 
@@ -16,7 +21,9 @@ import edu.columbia.libraries.sword.impl.AtomEntryRequest;
 import edu.columbia.libraries.sword.impl.DefaultDepositHandler;
 import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
 import edu.columbia.libraries.sword.xml.entry.Entry;
+import edu.columbia.libraries.sword.xml.service.Collection;
 import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.libraries.sword.xml.service.Workspace;
 
 
 public class FedoraServer implements SWORDServer {
@@ -44,6 +51,31 @@ public class FedoraServer implements SWORDServer {
 
     public void setServiceDocuments(Map<String, String> docs) {
         serviceDocuments = docs;
+    }
+    
+    public ServiceDocument doServiceDocument(String collectionPid, Context authzContext) throws SWORDException {
+    	try {
+    		if (!m_management.objectExists(collectionPid)) {
+    			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+    		}
+    		DOReader reader = m_management.getReader(false, authzContext, collectionPid);
+    		DCFields dcf = new DCFields(reader.getDatastream("DC", null).getContentStream());
+
+            Collection collection = new Collection();
+    		for (DepositHandler h: m_handlers.values()) {
+    			collection.addAcceptableMimeType(h.getContentType());
+    			collection.addAcceptablePackaging(URI.create(h.getPackaging()));
+    		}
+    		collection.title = (dcf.titles().size() > 0) ? dcf.titles().get(0).getValue() : "FCRepo Collection " + collectionPid;
+            ServiceDocument result = new ServiceDocument();
+            result.workspace = new Workspace();
+            result.workspace.addCollection(collection);
+
+    		
+    	} catch (ServerException e) {
+        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+    	}
+    	throw new SWORDException(SWORDException.FEDORA_ERROR);
     }
 
     public ServiceDocument doServiceDocument(ServiceDocumentRequest sdr, Context authzContext)

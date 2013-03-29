@@ -30,6 +30,8 @@ public interface SWORDServer {
     public ServiceDocument doServiceDocument(ServiceDocumentRequest sdr, Context authzContext)
         throws SWORDException;
 
+    public ServiceDocument doServiceDocument(String collection, Context authzContext)
+            throws SWORDException;
     /**
      * Answer a SWORD deposit
      *

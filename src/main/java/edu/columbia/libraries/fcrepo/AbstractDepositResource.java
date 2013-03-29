@@ -1,5 +1,6 @@
 package edu.columbia.libraries.fcrepo;
 
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.StringTokenizer;
@@ -16,6 +17,8 @@ import org.purl.sword.base.SWORDErrorDocument;
 import org.purl.sword.base.ServiceDocumentRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import edu.columbia.libraries.sword.xml.SwordError;
 
 
 public class AbstractDepositResource {
@@ -35,24 +38,20 @@ public class AbstractDepositResource {
     }
 
     public static Response errorResponse(String errorURI, int status, String summary, HttpServletRequest request) {
-        SWORDErrorDocument sed = new SWORDErrorDocument(errorURI);
-        Title title = new Title();
-        title.setContent("ERROR");
-        sed.setTitle(title);
+        SwordError sed = new SwordError();
+        sed.reason = URI.create(errorURI);
+        sed.title = "ERROR";
         Calendar calendar = Calendar.getInstance();
         SimpleDateFormat zulu = new SimpleDateFormat(UTC_DATE_FORMAT);
-        String serializeddate = zulu.format(calendar.getTime());
-        sed.setUpdated(serializeddate);
-        Summary sum = new Summary();
-        sum.setContent(summary);
-        sed.setSummary(sum);
+        String serializedDate = zulu.format(calendar.getTime());
+        sed.updated = serializedDate;
+        sed.summary = summary;
         if (request.getHeader(HttpHeaders.USER_AGENT) != null) {
             sed.setUserAgent(request.getHeader(HttpHeaders.USER_AGENT));
         }
-        String entity = sed.marshall().toXML();
         Response response = Response.status(status)
                                     .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
-                                    .entity(entity).build();
+                                    .entity(sed).build();
         return response;
     }
 

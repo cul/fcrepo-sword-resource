@@ -55,6 +55,14 @@ public class DefaultDepositHandler implements DepositHandler {
     public boolean handles(String contentType, String packaging) {
         return true;
     }
+    
+    public String getContentType() {
+    	return m_contentType;
+    }
+    
+    public String getPackaging() {
+    	return m_packaging;
+    }
 
 	public Entry ingestDeposit(FedoraDeposit deposit,
 			ServiceDocument serviceDocument, Context context) throws SWORDException {
@@ -81,7 +89,7 @@ public class DefaultDepositHandler implements DepositHandler {
 				result.addDescriptionLink(uri);
 				result.addMediaLink(uri + "/content");
 			} catch (ServerException e) {
-				throw new SWORDException(e.getMessage(), e);
+				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 			}
 		} else {
 			result = new Entry("noOp");

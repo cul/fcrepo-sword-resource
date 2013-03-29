@@ -17,6 +17,9 @@ public class Link {
 	@XmlAttribute(name = "href")
 	private URI href;
 	
+	@XmlAttribute(name = "type")
+	private String type;
+	
 	public Link(URI href, String rel) {
 		this.href = href;
 		this.rel = rel;
@@ -32,6 +35,14 @@ public class Link {
 	
 	public URI getHref(){
 		return href;
+	}
+	
+	public void setType(String type){
+		this.type = type;
+	}
+	
+	public String getType() {
+		return this.type;
 	}
 	
 	public static Link getDescriptionLink(String href) {
