@@ -3,6 +3,7 @@ package edu.columbia.libraries.sword.impl.fcrepo;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,6 +24,8 @@ import edu.columbia.libraries.sword.DepositHandler;
 import edu.columbia.libraries.sword.SWORDException;
 import edu.columbia.libraries.sword.ServiceDocumentService;
 import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
+import edu.columbia.libraries.sword.utils.DCUtils;
+import edu.columbia.libraries.sword.utils.StringUtils;
 import edu.columbia.libraries.sword.xml.entry.Entry;
 import edu.columbia.libraries.sword.xml.service.Collection;
 import edu.columbia.libraries.sword.xml.service.ServiceDocument;
@@ -116,7 +119,7 @@ public class FedoraSDocService implements ServiceDocumentService, Constants {
 				collection.addAcceptableMimeType(h.getContentType());
 				collection.addAcceptablePackaging(URI.create(h.getPackaging()));
 			}
-			collection.title = (dcf.titles().size() > 0) ? dcf.titles().get(0).getValue() : "FCRepo Collection " + collectionId;
+			collection.title = (dcf.titles().size() > 0) ? DCUtils.toStrings(dcf.titles()) : StringUtils.asList("FCRepo Collection " + collectionId);
 			ServiceDocument result = new ServiceDocument();
 			result.workspace = new Workspace();
 			result.workspace.addCollection(collection);

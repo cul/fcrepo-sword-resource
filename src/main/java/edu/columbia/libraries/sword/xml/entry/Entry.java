@@ -17,7 +17,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.fcrepo.server.utilities.DCField;
 import org.fcrepo.server.utilities.DCFields;
 
-import edu.columbia.libraries.fcrepo.FedoraDeposit;
 import edu.columbia.libraries.sword.impl.DepositRequest;
 import edu.columbia.libraries.sword.xml.entry.Author;
 import edu.columbia.libraries.sword.xml.entry.Content;

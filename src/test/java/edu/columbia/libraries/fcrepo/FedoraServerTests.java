@@ -5,6 +5,8 @@ import static org.mockito.Mockito.*;
 
 import java.util.HashMap;
 
+import javax.ws.rs.core.UriInfo;
+
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.resourceIndex.ResourceIndex;
@@ -34,7 +36,8 @@ public class FedoraServerTests {
     	handlers.put("", handler);
     	DOManager mgmt = mock(DOManager.class);
     	ResourceIndex ri = mock(ResourceIndex.class);
-    	test = new FedoraService(mgmt, ri);
+    	UriInfo uriInfo = mock(UriInfo.class);
+    	test = new FedoraService(mgmt, ri, uriInfo);
     	test.setDepositHandlers(handlers);
     }
     
