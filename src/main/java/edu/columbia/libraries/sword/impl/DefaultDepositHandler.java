@@ -3,34 +3,38 @@ package edu.columbia.libraries.sword.impl;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
 import org.fcrepo.common.Constants;
-import org.fcrepo.server.Context;
+import org.fcrepo.common.rdf.SimpleURIReference;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.access.Access;
 import org.fcrepo.server.access.RepositoryInfo;
 import org.fcrepo.server.errors.ServerException;
-import org.fcrepo.server.management.Management;
 import org.fcrepo.server.rest.DatastreamResource;
 import org.fcrepo.server.rest.FedoraObjectsResource;
 import org.fcrepo.server.storage.DOManager;
+import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.DOWriter;
-import org.fcrepo.server.storage.types.BasicDigitalObject;
-import org.fcrepo.server.storage.types.Datastream;
 import org.fcrepo.server.storage.types.DatastreamManagedContent;
 import org.fcrepo.server.storage.types.DigitalObject;
 import org.fcrepo.server.storage.types.MIMETypedStream;
 import org.fcrepo.server.storage.types.Property;
+import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
+import org.jrdf.graph.PredicateNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.columbia.libraries.fcrepo.Utils;
 import edu.columbia.libraries.sword.DepositHandler;
 import edu.columbia.libraries.sword.SWORDException;
 import edu.columbia.libraries.sword.SWORDResource;
-import edu.columbia.libraries.sword.xml.entry.Content;
+import edu.columbia.libraries.sword.SwordConstants;
 import edu.columbia.libraries.sword.xml.entry.Entry;
 import edu.columbia.libraries.sword.xml.service.Collection;
 import edu.columbia.libraries.sword.xml.service.ServiceDocument;
@@ -44,20 +48,32 @@ public class DefaultDepositHandler implements DepositHandler {
 	
 	protected String m_contentType = "";
 	
-	protected String m_packaging = "";
+	protected String m_packaging = null;
 	
 	protected String m_namespace = "sword"; //default
 	
 	private DOManager m_mgmt;
-	
-	private UriInfo m_uriInfo;
-	
+		
+	private Set<String> m_collectionIds;
+
+	private Set<String> m_rels; 
+
 	private Access m_access;
 	
-	public DefaultDepositHandler(DOManager mgmt, UriInfo uriInfo) throws ServerException {
+	public DefaultDepositHandler(DOManager mgmt, Set<String> collectionIds) throws ServerException {
 		m_mgmt = mgmt;
-		m_uriInfo = uriInfo;
+		m_collectionIds = collectionIds;
+		m_rels = new HashSet<String>(1);
+		m_rels.add(Constants.RELS_EXT.IS_MEMBER_OF.uri);
 	}
+	
+	public DefaultDepositHandler(DOManager mgmt, Set<String> collectionIds, Set<String> membershipRels) throws ServerException {
+		m_mgmt = mgmt;
+		m_collectionIds = collectionIds;
+		m_rels = membershipRels;
+		m_rels.add(Constants.RELS_EXT.IS_MEMBER_OF.uri);
+	}
+	
 	
 	public void setPIDNamespace(String namespace) {
 		m_namespace = namespace;
@@ -76,7 +92,7 @@ public class DefaultDepositHandler implements DepositHandler {
     }
 
 	public Entry ingestDeposit(DepositRequest deposit,
-			Context context) throws SWORDException {
+			org.fcrepo.server.Context context) throws SWORDException {
 		Entry result;
 		if (!deposit.isNoOp()) {
 			try {
@@ -91,7 +107,18 @@ public class DefaultDepositHandler implements DepositHandler {
 				writer.addRelationship("info:fedora/" + pid, Constants.RELS_EXT.IS_MEMBER_OF.uri, "info:fedora/" + collection, false, null);
 				DigitalObject dObj = writer.getObject();
 				
-				dObj.setExtProperty("org.purl.sword.slug", deposit.getSlug());
+				PredicateNode predicate = new SimpleURIReference(URI.create(SwordConstants.SWORD_SLUG_PREDICATE));
+				Set<RelationshipTuple> rels = dObj.getRelationships(predicate, null);
+				if (rels.size() > 0) {
+					for (RelationshipTuple rel: rels) {
+						writer.purgeRelationship(rel.subject, rel.predicate, rel.object, rel.isLiteral, rel.datatype.toString());
+					}
+				}
+				writer.addRelationship(
+						"info:fedora/" + dObj.getPid(),
+						SwordConstants.SWORD_SLUG_PREDICATE,
+						deposit.getSlug(), true, null);
+
 				DatastreamManagedContent ds = new DatastreamManagedContent();
 				ds.putContentStream(
 						new MIMETypedStream(
@@ -108,10 +135,11 @@ public class DefaultDepositHandler implements DepositHandler {
 				ds.DSCreateDT = new Date();
 				writer.addDatastream(ds, true);
 				writer.commit(DEFAULT_LABEL);
-				DCFields dcf = new DCFields(writer.GetDatastream("DC", null).getContentStream());
+				DCFields dcf = Utils.getDCFields(writer);
 				result = new Entry(pid);
 				result.treatment = DEFAULT_LABEL;
 				result.setDCFields(dcf);
+				result.setPackaging(m_packaging);
 				UriInfo baseUri = deposit.getBaseUri();
 				URI contentUri =
 						baseUri.getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
@@ -166,6 +194,60 @@ public class DefaultDepositHandler implements DepositHandler {
 
 		return tEntry;
 	}
+
+	@Override
+	public Entry getEntry(DepositRequest deposit,
+			org.fcrepo.server.Context context) throws SWORDException {
+		try {
+			String collectionId = deposit.getCollection();
+			String depositId = deposit.getDepositId();
+			if (!m_collectionIds.contains(collectionId)) {
+				throw new SWORDException(SWORDException.ERROR_REQUEST);
+			}
+			if (!m_mgmt.objectExists(depositId)) {
+				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+			}
+			DOReader reader = m_mgmt.getReader(false, context, depositId);
+			String packaging = Utils.getSwordPackaging(reader);
+			Set<RelationshipTuple> rels = reader.getRelationships();
+			boolean collectionFound = false;
+			String collectionUri = "info:fedora/" + collectionId;
+			for (RelationshipTuple rel: rels) {
+				if (m_rels.contains(rel.predicate)) {
+					collectionFound = (collectionFound || rel.object.equals(collectionUri));
+				}
+			}
+			if (!collectionFound) {
+				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+			}
+			Entry entry = new Entry();
+			if (packaging != null) {
+				entry.setPackaging(packaging);
+			}
+			entry.setUpdated(reader.getLastModDate());
+			entry.setPublished(reader.getCreateDate());
+			DCFields dcf = Utils.getDCFields(reader);
+			entry.setDCFields(dcf);
+			entry.setId(reader.GetObjectPID());
+			URI contentUri =
+					deposit.getBaseUri().getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
+					.build(depositId);
+			URI descUri = 
+					deposit.getBaseUri().getBaseUriBuilder().path(SWORDResource.class, "getDepositEntry")
+					.build(collectionId, depositId);
+			URI mediaUri =
+					deposit.getBaseUri().getBaseUriBuilder().path(DatastreamResource.class, "getDatastream")
+					.build(depositId, DepositHandler.DEPOSIT_DSID);
+			entry.addEditLink(descUri.toString());
+			entry.addEditMediaLink(mediaUri.toString());
+			entry.setContent(contentUri.toString(), "text/html");
+
+			//TODO Treatment?
+			return entry;
+		} catch (ServerException e) {
+			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+		}
+		}
 
 		
 }

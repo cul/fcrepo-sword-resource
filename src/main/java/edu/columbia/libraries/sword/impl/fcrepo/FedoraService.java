@@ -20,11 +20,14 @@ import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
 
+import edu.columbia.libraries.fcrepo.Utils;
 import edu.columbia.libraries.sword.DepositHandler;
 import edu.columbia.libraries.sword.EntryService;
+import edu.columbia.libraries.sword.SWORDErrorInfo;
 import edu.columbia.libraries.sword.SWORDException;
 import edu.columbia.libraries.sword.SWORDResource;
 import edu.columbia.libraries.sword.ServiceDocumentService;
+import edu.columbia.libraries.sword.SwordConstants;
 import edu.columbia.libraries.sword.impl.DefaultDepositHandler;
 import edu.columbia.libraries.sword.impl.DepositRequest;
 import edu.columbia.libraries.sword.xml.entry.Entry;
@@ -35,8 +38,6 @@ import edu.columbia.libraries.sword.xml.service.Workspace;
 
 public class FedoraService implements ServiceDocumentService, EntryService, Constants {
 	
-	public static final String SWORD_PKG_PREDICATE = "http://purl.org/net/sword/packaging";
-
 	private ResourceIndex m_resourceIndex; 
 	
 	private DOManager m_manager;
@@ -138,58 +139,41 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		throw new SWORDException(SWORDException.FEDORA_ERROR);
 	}
 	
+	private DepositHandler getHandler(String contentType, String packaging) throws ServerException {
+        for (DepositHandler handler: m_handlers.values()) {
+        	if (handler.handles(contentType, packaging)) {
+        		return handler;
+        	}
+        }
+        return new DefaultDepositHandler(m_manager, m_collectionIds, m_rels);
+	}
+	
 	public Entry getEntry(DepositRequest deposit, Context context) throws SWORDException {
-		try {
-			String collectionId = deposit.getCollection();
-			String depositId = deposit.getDepositId();
-			if (!m_collectionIds.contains(collectionId)) {
-				throw new SWORDException(SWORDException.ERROR_REQUEST);
-			}
-			if (!m_manager.objectExists(depositId)) {
-				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-			}
-			DOReader reader = m_manager.getReader(false, context, depositId);
-			Set<RelationshipTuple> rels = reader.getRelationships();
-			boolean collectionFound = false;
-			String collectionUri = "info:fedora/" + collectionId;
-			String packaging = null;
-			for (RelationshipTuple rel: rels) {
-				if (rel.predicate.equals(SWORD_PKG_PREDICATE)){
-					packaging = rel.object;
-				}
-				if (m_rels.contains(rel.predicate)) {
-					collectionFound = (collectionFound || rel.object.equals(collectionUri));
-				}
-			}
-			if (!collectionFound) {
-				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-			}
-			Entry entry = new Entry();
-			if (packaging != null) {
-				entry.setPackaging(packaging);
-			}
-			entry.setUpdated(reader.getLastModDate());
-			entry.setPublished(reader.getCreateDate());
-			DCFields dcf = new DCFields(reader.getDatastream("DC", null).getContentStream());
-			entry.setDCFields(dcf);
-			entry.setId(reader.GetObjectPID());
-			URI contentUri =
-					m_uriInfo.getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
-					.build(depositId);
-			URI descUri = 
-					m_uriInfo.getBaseUriBuilder().path(SWORDResource.class, "getDepositEntry")
-					.build(collectionId, depositId);
-			URI mediaUri =
-					m_uriInfo.getBaseUriBuilder().path(DatastreamResource.class, "getDatastream")
-					.build(depositId, DepositHandler.DEPOSIT_DSID);
-			entry.addEditLink(descUri.toString());
-			entry.addEditMediaLink(mediaUri.toString());
-			entry.setContent(contentUri.toString(), "text/html");
-
-			//TODO Treatment?
-			return entry;
+        String pid = deposit.getDepositId();
+        
+        try {
+			DOReader reader = m_manager.getReader(false, context, pid);
+	        Set<RelationshipTuple> rels = reader.getRelationships();
+	        String contentType = null;
+	        String packaging = null;
+	        for (RelationshipTuple rel: rels) {
+	        	if (SwordConstants.SWORD_CONTENT_TYPE_PREDICATE.equals(rel.predicate)) {
+	        		contentType = rel.object;
+	        	}
+	        	if (SwordConstants.SWORD_PACKAGING_PREDICATE.equals(rel.predicate)) {
+	        		packaging = rel.object;
+	        	}
+	        }
+	        DepositHandler handler = null;
+	        try {
+	        	handler = getHandler(contentType, packaging);
+		        return handler.getEntry(deposit, context);
+	        } catch (ServerException e) {
+	        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+	        }
 		} catch (ServerException e) {
-			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+			e.printStackTrace();
+			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 		}
 	}
 
@@ -208,22 +192,14 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
         // check whether content types is allowed
         // check whether package type is allowed
         // get the first matching deposit handler
-        DepositHandler handler = null;
-        for (DepositHandler h: m_handlers.values()) {
-            if (h.handles(deposit.getContentType(), deposit.getPackaging())) {
-                handler = h;
-            }
-        }
-        if (handler == null) {
-			try {
-				handler = new DefaultDepositHandler(m_manager, m_uriInfo);
-			} catch (ServerException e) {
-				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-			}
-        }
         Entry entry = null;
-        entry = handler.ingestDeposit(deposit, context);
-
+        DepositHandler handler = null;
+        try {
+        	handler = getHandler(deposit.getContentType(), deposit.getPackaging());
+            entry = handler.ingestDeposit(deposit, context);
+        } catch (ServerException e) {
+        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+        }
         return entry;
 	}
 
