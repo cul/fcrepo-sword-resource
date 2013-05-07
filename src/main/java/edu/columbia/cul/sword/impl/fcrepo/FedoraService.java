@@ -15,6 +15,7 @@ import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.rest.DatastreamResource;
 import org.fcrepo.server.rest.FedoraObjectsResource;
+import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
 import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.types.RelationshipTuple;
@@ -38,6 +39,8 @@ import edu.columbia.cul.sword.xml.service.Workspace;
 
 public class FedoraService implements ServiceDocumentService, EntryService, Constants {
 	
+	private Authorization m_authz;
+	
 	private ResourceIndex m_resourceIndex; 
 	
 	private DOManager m_manager;
@@ -52,7 +55,8 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
     
     private String m_workspace_title = "FCRepo SWORD Workspace";
 
-	public FedoraService(DOManager manager, ResourceIndex resourceIndex, UriInfo uriInfo) {
+	public FedoraService(Authorization authz, DOManager manager, ResourceIndex resourceIndex, UriInfo uriInfo) {
+		m_authz = authz;
 		m_manager = manager;
 		m_resourceIndex = resourceIndex;
 		m_uriInfo = uriInfo;
@@ -128,15 +132,15 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 				collection.addAcceptablePackaging(URI.create(h.getPackaging()));
 			}
 			collection.setDCFields(dcf);
-			ServiceDocument result = new ServiceDocument();
-			result.workspace = new Workspace();
-			result.workspace.addCollection(collection);
+			
+			for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.MEDIATION, null)) {
+				collection.mediation = Boolean.valueOf(rel.object);
+			}
 
-
+            return collection;
 		} catch (ServerException e) {
 			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 		}
-		throw new SWORDException(SWORDException.FEDORA_ERROR);
 	}
 	
 	private DepositHandler getHandler(String contentType, String packaging) throws ServerException {
@@ -153,16 +157,16 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
         
         try {
 			DOReader reader = m_manager.getReader(false, context, pid);
-	        Set<RelationshipTuple> rels = reader.getRelationships();
+
 	        String contentType = null;
 	        String packaging = null;
-	        for (RelationshipTuple rel: rels) {
-	        	if (SwordConstants.SWORD_CONTENT_TYPE_PREDICATE.equals(rel.predicate)) {
-	        		contentType = rel.object;
-	        	}
-	        	if (SwordConstants.SWORD_PACKAGING_PREDICATE.equals(rel.predicate)) {
-	        		packaging = rel.object;
-	        	}
+
+	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null)) {
+        		contentType = rel.object;
+	        }
+
+	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.PACKAGING, null)) {
+	        	packaging = rel.object;
 	        }
 	        DepositHandler handler = null;
 	        try {

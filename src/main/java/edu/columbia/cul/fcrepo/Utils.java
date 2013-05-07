@@ -2,6 +2,7 @@ package edu.columbia.cul.fcrepo;
 
 import java.util.Set;
 
+import org.fcrepo.common.rdf.RDFName;
 import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.DOWriter;
@@ -33,7 +34,7 @@ public abstract class Utils {
     }
     
     private static String getSwordContentType(Set<RelationshipTuple> rels) {
-		return getRel(SwordConstants.SWORD_CONTENT_TYPE_PREDICATE, rels);
+		return getRel(SwordConstants.SWORD.CONTENT_TYPE, rels);
     }
 
     public static String getSwordPackaging(DOReader reader) throws ServerException {
@@ -45,7 +46,7 @@ public abstract class Utils {
     }
 
     private static String getSwordPackaging(Set<RelationshipTuple> rels) {
-		return getRel(SwordConstants.SWORD_PACKAGING_PREDICATE, rels);
+		return getRel(SwordConstants.SWORD.PACKAGING, rels);
     }
 
     public static String getSlug(DOReader reader) throws ServerException {
@@ -57,12 +58,12 @@ public abstract class Utils {
     }
 
     private static String getSlug(Set<RelationshipTuple> rels) {
-		return getRel(SwordConstants.SWORD_SLUG_PREDICATE, rels);
+		return getRel(SwordConstants.SWORD.SLUG, rels);
     }
 
-    private static String getRel(String predicate, Set<RelationshipTuple> rels) {
+    private static String getRel(RDFName predicate, Set<RelationshipTuple> rels) {
 		for (RelationshipTuple rel: rels) {
-			if (rel.predicate.equals(predicate)){
+			if (rel.predicate.equals(predicate.uri)){
 				return rel.object;
 			}
 		}

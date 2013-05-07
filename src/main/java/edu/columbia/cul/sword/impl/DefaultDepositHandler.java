@@ -1,7 +1,10 @@
 package edu.columbia.cul.sword.impl;
 
+import static org.fcrepo.common.Constants.MODEL;
+
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -10,6 +13,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
 import org.fcrepo.common.Constants;
+import org.fcrepo.common.PID;
 import org.fcrepo.common.rdf.SimpleURIReference;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.access.Access;
@@ -57,6 +61,8 @@ public class DefaultDepositHandler implements DepositHandler {
 	private Set<String> m_collectionIds;
 
 	private Set<String> m_rels; 
+	
+	private Set<String> m_objectCModels = Collections.emptySet();
 
 	private Access m_access;
 	
@@ -77,6 +83,10 @@ public class DefaultDepositHandler implements DepositHandler {
 	
 	public void setPIDNamespace(String namespace) {
 		m_namespace = namespace;
+	}
+	
+	public void setObjectCModels(Set<String> objectCModels) {
+		m_objectCModels = objectCModels;
 	}
 
     public boolean handles(String contentType, String packaging) {
@@ -107,18 +117,36 @@ public class DefaultDepositHandler implements DepositHandler {
 				writer.addRelationship("info:fedora/" + pid, Constants.RELS_EXT.IS_MEMBER_OF.uri, "info:fedora/" + collection, false, null);
 				DigitalObject dObj = writer.getObject();
 				
-				PredicateNode predicate = new SimpleURIReference(URI.create(SwordConstants.SWORD_SLUG_PREDICATE));
-				Set<RelationshipTuple> rels = dObj.getRelationships(predicate, null);
+				Set<RelationshipTuple> rels = dObj.getRelationships(SwordConstants.SWORD.SLUG, null);
 				if (rels.size() > 0) {
 					for (RelationshipTuple rel: rels) {
 						writer.purgeRelationship(rel.subject, rel.predicate, rel.object, rel.isLiteral, rel.datatype.toString());
 					}
 				}
+				writer.getContentModels();
+				String subject = PID.toURI(dObj.getPid());
 				writer.addRelationship(
-						"info:fedora/" + dObj.getPid(),
-						SwordConstants.SWORD_SLUG_PREDICATE,
+						subject,
+						SwordConstants.SWORD.SLUG.uri,
 						deposit.getSlug(), true, null);
-
+				// add any configured object models to the created object
+                for (String cmodel: m_objectCModels) {
+                	writer.addRelationship(
+                			subject,
+                			Constants.MODEL.HAS_MODEL.uri,
+                			cmodel,
+                			false,
+                			null);
+                }
+                // and add whatever membership-indicating rels for the collection
+                for (String memberOf: m_rels) {
+                	writer.addRelationship(
+                			subject,
+                			memberOf,
+                			PID.toURI(collection),
+                			false,
+                			null);
+                }
 				DatastreamManagedContent ds = new DatastreamManagedContent();
 				ds.putContentStream(
 						new MIMETypedStream(
@@ -128,7 +156,7 @@ public class DefaultDepositHandler implements DepositHandler {
 								deposit.getContentLength()));
 				ds.DatastreamID = DepositHandler.DEPOSIT_DSID;
 				ds.DSChecksum = deposit.getMD5();
-				ds.DSChecksumType = "MD5";
+				if (ds.DSChecksum != null) ds.DSChecksumType = "MD5";
 				ds.DSControlGrp = "M";
 				ds.DSLabel = deposit.getFileName();
 				ds.DSMIME = deposit.getContentType();

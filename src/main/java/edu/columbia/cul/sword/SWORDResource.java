@@ -44,6 +44,7 @@ import org.fcrepo.server.storage.DOManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.stereotype.Component;
 
 import edu.columbia.cul.sword.DepositHandler;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
@@ -60,6 +61,7 @@ import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 
 @Path("/")
+@Component
 public class SWORDResource extends BaseRestResource {
     private static final Logger log = LoggerFactory.getLogger(SWORDResource.class.getName());
     
@@ -84,23 +86,21 @@ public class SWORDResource extends BaseRestResource {
     private File m_tempDir;
 
     private FedoraService m_sword;
-    
-    private Authorization m_authorization;
-    
+        
     private RepositoryInfo m_repoInfo;
     
-    private JAXBContext m_bind;
-
     private String m_realm;
     
     Set<String> m_collectionPids = null;
 
     public SWORDResource(Server server) throws JAXBException, BeansException, ServerException {
     	super(server);
-        m_sword = new FedoraService(server.getBean(DOManager.class), server.getBean(ResourceIndex.class), m_uriInfo);
-        m_authorization = server.getBean(Authorization.class);
+        m_sword = new FedoraService(
+        		server.getBean(Authorization.class),
+        		server.getBean(DOManager.class),
+        		server.getBean(ResourceIndex.class),
+        		m_uriInfo);
         m_repoInfo = server.getBean(Access.class).describeRepository(ReadOnlyContext.EMPTY);
-		m_bind = JAXBContext.newInstance( ServiceDocument.class, Entry.class, SwordError.class );
     }
     
     // testing convenience method
@@ -118,12 +118,17 @@ public class SWORDResource extends BaseRestResource {
     	m_uriInfo = uriInfo;
     }
     
+    public void setMembershipPredicate(String predicate) {
+    	m_sword.setMembershipRel(predicate);
+    }
+    
     public void setDepositHandlers(Map<String, DepositHandler> handlers) {
     	m_sword.setDepositHandlers(handlers);
     }
     
     public void setCollectionPids(Collection<String> collectionPids) {
     	m_collectionPids = new HashSet<String>(collectionPids);
+    	m_sword.setCollections(m_collectionPids);
     }
 
     public void init() throws InitializationException {
