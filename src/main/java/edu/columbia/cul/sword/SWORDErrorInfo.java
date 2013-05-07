@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword;
+package edu.columbia.cul.sword;
 
 import java.net.URI;
 

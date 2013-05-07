@@ -1,6 +1,6 @@
-package edu.columbia.libraries.sword.xml.entry;
+package edu.columbia.cul.sword.xml.entry;
 
-import static edu.columbia.libraries.sword.utils.DateUtils.getAtomDate;
+import static edu.columbia.cul.sword.utils.DateUtils.getAtomDate;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -17,12 +17,12 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.fcrepo.server.utilities.DCField;
 import org.fcrepo.server.utilities.DCFields;
 
-import edu.columbia.libraries.sword.impl.DepositRequest;
-import edu.columbia.libraries.sword.xml.entry.Author;
-import edu.columbia.libraries.sword.xml.entry.Content;
-import edu.columbia.libraries.sword.xml.entry.Contributor;
-import edu.columbia.libraries.sword.xml.entry.Link;
-import edu.columbia.libraries.sword.xml.entry.Generator;
+import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.xml.entry.Author;
+import edu.columbia.cul.sword.xml.entry.Content;
+import edu.columbia.cul.sword.xml.entry.Contributor;
+import edu.columbia.cul.sword.xml.entry.Link;
+import edu.columbia.cul.sword.xml.entry.Generator;
 
 @XmlRootElement(name = "entry", namespace = "http://www.w3.org/2005/Atom")
 @XmlAccessorType(XmlAccessType.FIELD)

@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword;
+package edu.columbia.cul.sword;
 
 import java.util.StringTokenizer;
 
@@ -10,7 +10,7 @@ import org.fcrepo.utilities.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.libraries.sword.xml.entry.Generator;
+import edu.columbia.cul.sword.xml.entry.Generator;
 
 
 public abstract class SWORDRequest {

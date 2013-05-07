@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.xml.entry;
+package edu.columbia.cul.sword.xml.entry;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

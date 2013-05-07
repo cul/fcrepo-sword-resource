@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.utils;
+package edu.columbia.cul.sword.utils;
 
 import java.util.Arrays;
 import java.util.List;

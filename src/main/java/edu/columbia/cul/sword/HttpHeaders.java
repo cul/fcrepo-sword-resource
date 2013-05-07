@@ -34,7 +34,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  */
-package edu.columbia.libraries.sword;
+package edu.columbia.cul.sword;
 
 import javax.servlet.http.HttpServletResponse;
 

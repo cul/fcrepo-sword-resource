@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.utils;
+package edu.columbia.cul.sword.utils;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

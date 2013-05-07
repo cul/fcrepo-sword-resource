@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.xml.service;
+package edu.columbia.cul.sword.xml.service;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -14,9 +14,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.columbia.libraries.sword.xml.service.AcceptPackaging;
-import edu.columbia.libraries.sword.xml.service.Collection;
-import edu.columbia.libraries.sword.xml.service.Workspace;
+import edu.columbia.cul.sword.xml.service.AcceptPackaging;
+import edu.columbia.cul.sword.xml.service.Collection;
+import edu.columbia.cul.sword.xml.service.Workspace;
 
 public class ServiceDocumentTest {
 
@@ -33,7 +33,7 @@ public class ServiceDocumentTest {
 	@Test
 	public void testUnmarshalling() throws JAXBException {
 		JAXBContext jc = JAXBContext.newInstance(
-				"edu.columbia.libraries.sword.xml.service");
+				"edu.columbia.cul.sword.xml.service");
 		Unmarshaller um = jc.createUnmarshaller();
 		ServiceDocument actual = (ServiceDocument) um.unmarshal(
 				ServiceDocumentTest.class.getResourceAsStream(

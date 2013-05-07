@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword;
+package edu.columbia.cul.sword;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -45,18 +45,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 
-import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.impl.AtomEntryRequest;
-import edu.columbia.libraries.sword.impl.DepositRequest;
-import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
-import edu.columbia.libraries.sword.impl.fcrepo.FedoraService;
-import edu.columbia.libraries.sword.utils.ChecksumUtils;
-import edu.columbia.libraries.sword.xml.SwordError;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.entry.Feed;
-import edu.columbia.libraries.sword.xml.entry.Generator;
-import edu.columbia.libraries.sword.xml.entry.Link;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.sword.DepositHandler;
+import edu.columbia.cul.sword.impl.AtomEntryRequest;
+import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
+import edu.columbia.cul.sword.impl.fcrepo.FedoraService;
+import edu.columbia.cul.sword.utils.ChecksumUtils;
+import edu.columbia.cul.sword.xml.SwordError;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.entry.Feed;
+import edu.columbia.cul.sword.xml.entry.Generator;
+import edu.columbia.cul.sword.xml.entry.Link;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 
 @Path("/")

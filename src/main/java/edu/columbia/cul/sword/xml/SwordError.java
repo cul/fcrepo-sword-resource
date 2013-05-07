@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.xml;
+package edu.columbia.cul.sword.xml;
 
 import java.net.URI;
 
@@ -7,9 +7,9 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import edu.columbia.libraries.sword.xml.entry.Author;
-import edu.columbia.libraries.sword.xml.entry.Generator;
-import edu.columbia.libraries.sword.xml.entry.Link;
+import edu.columbia.cul.sword.xml.entry.Author;
+import edu.columbia.cul.sword.xml.entry.Generator;
+import edu.columbia.cul.sword.xml.entry.Link;
 
 @XmlRootElement(name = "error", namespace = "http://purl.org/net/sword/")
 public class SwordError {

@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl;
+package edu.columbia.cul.sword.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,9 +9,9 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import edu.columbia.libraries.sword.HttpHeaders;
-import edu.columbia.libraries.sword.SWORDException;
-import edu.columbia.libraries.sword.SWORDRequest;
+import edu.columbia.cul.sword.HttpHeaders;
+import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.SWORDRequest;
 
 
 public class DepositRequest extends SWORDRequest {

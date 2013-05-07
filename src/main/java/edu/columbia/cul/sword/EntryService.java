@@ -1,12 +1,12 @@
-package edu.columbia.libraries.sword;
+package edu.columbia.cul.sword;
 
 import java.util.Date;
 
 import org.fcrepo.server.Context;
 
-import edu.columbia.libraries.sword.impl.DepositRequest;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.entry.Feed;
+import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.entry.Feed;
 
 public interface EntryService {
     public Entry getEntry(DepositRequest deposit, Context context)  throws SWORDException;

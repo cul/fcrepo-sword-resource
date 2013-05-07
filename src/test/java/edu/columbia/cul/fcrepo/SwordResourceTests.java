@@ -1,4 +1,4 @@
-package edu.columbia.libraries.fcrepo;
+package edu.columbia.cul.fcrepo;
 
 import static org.mockito.Mockito.*;
 
@@ -11,7 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.BeansException;
 
-import edu.columbia.libraries.sword.SWORDResource;
+import edu.columbia.cul.sword.SWORDResource;
 
 public class SwordResourceTests {
 	

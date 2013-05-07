@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl.fcrepo;
+package edu.columbia.cul.sword.impl.fcrepo;
 
 import java.net.URI;
 import java.util.Date;
@@ -20,21 +20,21 @@ import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
 
-import edu.columbia.libraries.fcrepo.Utils;
-import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.EntryService;
-import edu.columbia.libraries.sword.SWORDErrorInfo;
-import edu.columbia.libraries.sword.SWORDException;
-import edu.columbia.libraries.sword.SWORDResource;
-import edu.columbia.libraries.sword.ServiceDocumentService;
-import edu.columbia.libraries.sword.SwordConstants;
-import edu.columbia.libraries.sword.impl.DefaultDepositHandler;
-import edu.columbia.libraries.sword.impl.DepositRequest;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.entry.Feed;
-import edu.columbia.libraries.sword.xml.service.Collection;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
-import edu.columbia.libraries.sword.xml.service.Workspace;
+import edu.columbia.cul.fcrepo.Utils;
+import edu.columbia.cul.sword.DepositHandler;
+import edu.columbia.cul.sword.EntryService;
+import edu.columbia.cul.sword.SWORDErrorInfo;
+import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.ServiceDocumentService;
+import edu.columbia.cul.sword.SwordConstants;
+import edu.columbia.cul.sword.impl.DefaultDepositHandler;
+import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.entry.Feed;
+import edu.columbia.cul.sword.xml.service.Collection;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.sword.xml.service.Workspace;
 
 public class FedoraService implements ServiceDocumentService, EntryService, Constants {
 	

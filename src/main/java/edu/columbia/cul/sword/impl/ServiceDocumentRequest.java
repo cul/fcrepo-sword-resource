@@ -1,8 +1,8 @@
-package edu.columbia.libraries.sword.impl;
+package edu.columbia.cul.sword.impl;
 
 import javax.servlet.http.HttpServletRequest;
 
-import edu.columbia.libraries.sword.SWORDRequest;
+import edu.columbia.cul.sword.SWORDRequest;
 
 
 public class ServiceDocumentRequest extends SWORDRequest {

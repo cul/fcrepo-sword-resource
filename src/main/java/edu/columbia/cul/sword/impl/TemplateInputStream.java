@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl;
+package edu.columbia.cul.sword.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;

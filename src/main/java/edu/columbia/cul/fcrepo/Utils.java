@@ -1,4 +1,4 @@
-package edu.columbia.libraries.fcrepo;
+package edu.columbia.cul.fcrepo;
 
 import java.util.Set;
 
@@ -9,7 +9,7 @@ import org.fcrepo.server.storage.types.Datastream;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
 
-import edu.columbia.libraries.sword.SwordConstants;
+import edu.columbia.cul.sword.SwordConstants;
 
 public abstract class Utils {
     public static DCFields getDCFields(DOWriter writer) throws ServerException {

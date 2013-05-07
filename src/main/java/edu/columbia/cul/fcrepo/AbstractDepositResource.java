@@ -1,4 +1,4 @@
-package edu.columbia.libraries.fcrepo;
+package edu.columbia.cul.fcrepo;
 
 import java.net.URI;
 import java.text.SimpleDateFormat;
@@ -18,8 +18,8 @@ import org.purl.sword.base.ServiceDocumentRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.libraries.sword.SWORDResource;
-import edu.columbia.libraries.sword.xml.SwordError;
+import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.xml.SwordError;
 
 
 public class AbstractDepositResource {

@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.xml.service;
+package edu.columbia.cul.sword.xml.service;
 
 import java.net.URI;
 import java.util.ArrayList;

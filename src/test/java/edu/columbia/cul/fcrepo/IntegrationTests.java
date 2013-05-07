@@ -1,4 +1,4 @@
-package edu.columbia.libraries.fcrepo;
+package edu.columbia.cul.fcrepo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -45,13 +45,13 @@ import org.junit.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.context.support.GenericApplicationContext;
 
-import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.SWORDException;
-import edu.columbia.libraries.sword.SWORDResource;
-import edu.columbia.libraries.sword.impl.DepositRequest;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
-import edu.columbia.libraries.sword.xml.entry.Link;
+import edu.columbia.cul.sword.DepositHandler;
+import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.sword.xml.entry.Link;
 
 public class IntegrationTests {
 	

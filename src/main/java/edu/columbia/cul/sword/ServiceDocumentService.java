@@ -1,8 +1,8 @@
-package edu.columbia.libraries.sword;
+package edu.columbia.cul.sword;
 
 import org.fcrepo.server.Context;
 
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 public interface ServiceDocumentService {
 

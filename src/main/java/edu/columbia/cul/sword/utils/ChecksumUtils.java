@@ -34,7 +34,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
  */
-package edu.columbia.libraries.sword.utils;
+package edu.columbia.cul.sword.utils;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -46,7 +46,7 @@ import java.security.NoSuchAlgorithmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.libraries.sword.SWORDException;
+import edu.columbia.cul.sword.SWORDException;
 
 /**
  * Utility class that holds Checksum related methods. 

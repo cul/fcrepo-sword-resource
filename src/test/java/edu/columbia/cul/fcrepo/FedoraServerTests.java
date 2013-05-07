@@ -1,4 +1,4 @@
-package edu.columbia.libraries.fcrepo;
+package edu.columbia.cul.fcrepo;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
@@ -15,13 +15,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.SWORDException;
-import edu.columbia.libraries.sword.impl.DepositRequest;
-import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
-import edu.columbia.libraries.sword.impl.fcrepo.FedoraService;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.sword.DepositHandler;
+import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
+import edu.columbia.cul.sword.impl.fcrepo.FedoraService;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 public class FedoraServerTests {
 	

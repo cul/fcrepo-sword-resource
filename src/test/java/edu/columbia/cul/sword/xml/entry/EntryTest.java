@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.xml.entry;
+package edu.columbia.cul.sword.xml.entry;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -29,7 +29,7 @@ public class EntryTest {
 	@Test
 	public void testUnmarshall() throws JAXBException {
 		JAXBContext jc = JAXBContext.newInstance(
-				"edu.columbia.libraries.sword.xml.entry");
+				"edu.columbia.cul.sword.xml.entry");
 		Unmarshaller um = jc.createUnmarshaller();
 		Entry actual = (Entry) um.unmarshal(
 				EntryTest.class.getResourceAsStream(

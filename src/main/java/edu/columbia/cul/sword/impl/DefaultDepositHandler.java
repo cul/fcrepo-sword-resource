@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl;
+package edu.columbia.cul.sword.impl;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -30,14 +30,14 @@ import org.jrdf.graph.PredicateNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.libraries.fcrepo.Utils;
-import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.SWORDException;
-import edu.columbia.libraries.sword.SWORDResource;
-import edu.columbia.libraries.sword.SwordConstants;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.service.Collection;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.fcrepo.Utils;
+import edu.columbia.cul.sword.DepositHandler;
+import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.SwordConstants;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.service.Collection;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 
 public class DefaultDepositHandler implements DepositHandler {

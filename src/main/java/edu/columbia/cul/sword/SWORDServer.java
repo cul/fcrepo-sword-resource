@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword;
+package edu.columbia.cul.sword;
 
 import java.util.Map;
 
@@ -7,10 +7,10 @@ import org.fcrepo.server.errors.ServerException;
 import org.purl.sword.base.AtomDocumentResponse;
 import org.purl.sword.base.Deposit;
 
-import edu.columbia.libraries.sword.impl.AtomEntryRequest;
-import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.sword.impl.AtomEntryRequest;
+import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 
 public interface SWORDServer {

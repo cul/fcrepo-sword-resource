@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl;
+package edu.columbia.cul.sword.impl;
 
 import java.util.Set;
 

@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl.fcrepo;
+package edu.columbia.cul.sword.impl.fcrepo;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -20,16 +20,16 @@ import org.fcrepo.server.storage.DOManager;
 import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.utilities.DCFields;
 
-import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.SWORDException;
-import edu.columbia.libraries.sword.ServiceDocumentService;
-import edu.columbia.libraries.sword.impl.ServiceDocumentRequest;
-import edu.columbia.libraries.sword.utils.DCUtils;
-import edu.columbia.libraries.sword.utils.StringUtils;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.sword.xml.service.Collection;
-import edu.columbia.libraries.sword.xml.service.ServiceDocument;
-import edu.columbia.libraries.sword.xml.service.Workspace;
+import edu.columbia.cul.sword.DepositHandler;
+import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.ServiceDocumentService;
+import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
+import edu.columbia.cul.sword.utils.DCUtils;
+import edu.columbia.cul.sword.utils.StringUtils;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.service.Collection;
+import edu.columbia.cul.sword.xml.service.ServiceDocument;
+import edu.columbia.cul.sword.xml.service.Workspace;
 
 public class FedoraSDocService implements ServiceDocumentService, Constants {
 

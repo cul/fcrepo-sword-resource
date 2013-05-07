@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl;
+package edu.columbia.cul.sword.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
@@ -27,12 +27,12 @@ import org.junit.Test;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import edu.columbia.libraries.fcrepo.Utils;
-import edu.columbia.libraries.sword.DepositHandler;
-import edu.columbia.libraries.sword.SWORDException;
-import edu.columbia.libraries.sword.SWORDResource;
-import edu.columbia.libraries.sword.xml.entry.Entry;
-import edu.columbia.libraries.utils.TestUtils;
+import edu.columbia.cul.fcrepo.Utils;
+import edu.columbia.cul.sword.DepositHandler;
+import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.utils.TestUtils;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({Utils.class})

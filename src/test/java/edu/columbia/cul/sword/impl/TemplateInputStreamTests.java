@@ -1,4 +1,4 @@
-package edu.columbia.libraries.sword.impl;
+package edu.columbia.cul.sword.impl;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

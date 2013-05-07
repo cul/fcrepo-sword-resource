@@ -1,4 +1,4 @@
-package edu.columbia.libraries.utils;
+package edu.columbia.cul.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
