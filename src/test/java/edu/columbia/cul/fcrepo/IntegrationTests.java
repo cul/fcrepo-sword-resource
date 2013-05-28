@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -13,6 +14,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,19 +23,24 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBException;
 
 import org.fcrepo.server.Context;
 import org.fcrepo.server.Module;
 import org.fcrepo.server.PackageProxy;
 import org.fcrepo.server.Server;
+import org.fcrepo.server.access.Access;
 import org.fcrepo.server.access.DefaultAccess;
+import org.fcrepo.server.access.RepositoryInfo;
 import org.fcrepo.server.config.Parameter;
 import org.fcrepo.server.errors.InitializationException;
 import org.fcrepo.server.errors.ModuleInitializationException;
 import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.errors.ServerInitializationException;
 import org.fcrepo.server.management.ManagementModule;
+import org.fcrepo.server.storage.DOManager;
+import org.fcrepo.server.storage.DOReader;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
@@ -66,21 +73,33 @@ public class IntegrationTests {
     
     private SWORDResource test;
     
+    private UriInfo mockUriInfo;
+    
+    private ServletContext mockContext;
+    
     @Before
     public void setUp()
     		throws NoSuchFieldException,
     		SecurityException, IllegalArgumentException,
     		IllegalAccessException, SWORDException,
     		JAXBException, BeansException, ServerException {
+    	mockUriInfo = mock(UriInfo.class);
     	depositURI = "http://fedora.info/deposit";
     	limitedDepositURI = depositURI + "/limited";
-    	Server server = mock(Server.class, "mock.fcrepo.server");
-    	final ManagementModule mgmt = mock(ManagementModule.class);
+    	Server server = mock(Server.class);
+    	final DOManager mgmt = mock(DOManager.class);
     	final DefaultAccess access = mock(DefaultAccess.class);
+    	RepositoryInfo mockInfo = mock(RepositoryInfo.class);
+    	mockInfo.repositoryName = "mockRepo";
+    	mockInfo.repositoryVersion = "0.0";
+    	when(access.describeRepository(any(Context.class))).thenReturn(mockInfo);
     	// getModule is final, so we have to mock the context
     	GenericApplicationContext context = mock(GenericApplicationContext.class);
-    	when(context.getBean("org.fcrepo.server.management.Management",Module.class)).thenReturn(mgmt);
-    	when(context.getBean("org.fcrepo.server.access.Access",Module.class)).thenReturn(access);
+    	when(server.getBean(DOManager.class)).thenReturn(mgmt);
+    	DOReader mockReader = getMockReader("test");
+    	when(mgmt.getReader(eq(false), any(Context.class), eq("test"))).thenReturn(mockReader);
+    	when(mgmt.objectExists("test")).thenReturn(true);
+    	when(server.getBean("org.fcrepo.server.access.Access")).thenReturn(access);
     	// getParameter is final, so we have to actually give it some values
     	List<Parameter> parameters = new ArrayList<Parameter>(1);
     	parameters.add(new Parameter("fedoraServerHost", "localhost", false, null, null));
@@ -95,10 +114,12 @@ public class IntegrationTests {
 
     	when(handler.ingestDeposit(any(DepositRequest.class), any(Context.class))).thenReturn(getMockEntry());
     	test.setDepositHandlers(handlers);
-    	ServletContext sContext = mock(ServletContext.class);
-    	when(sContext.getInitParameter("maxUploadSize")).thenReturn(Integer.toString(1024*1024));
-    	when(sContext.getInitParameter("authentication-method")).thenReturn("None");
-    	test.setServletContext(sContext);
+    	mockContext = mock(ServletContext.class);
+    	when(mockContext.getInitParameter("maxUploadSize")).thenReturn(Integer.toString(1024*1024));
+    	when(mockContext.getInitParameter("authentication-method")).thenReturn("None");
+    	test.setServletContext(mockContext);
+    	String [] collections = new String[]{"test"};
+    	test.setCollectionPids(Arrays.asList(collections));
     }
     
     @After
@@ -118,7 +139,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
     	
-    	Response response = test.postDeposit("deposit");
+    	Response response = test.postDeposit("deposit", mockContext, mockUriInfo);
     	String entity = response.getEntity().toString();
     	System.err.println(entity);
     	assertEquals("Unexpected response status from deposit with bad packaging", 415, response.getStatus());
@@ -146,7 +167,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 
-    	Response response = test.postDeposit("deposit");
+    	Response response = test.postDeposit("deposit", mockContext, mockUriInfo);
     	assertEquals("Unexpected response status from deposit with good packaging", 201, response.getStatus());
 
     	SAXBuilder tBuilder = new SAXBuilder();
@@ -173,7 +194,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
     	
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		
 		int tStatus = response.getStatus();	
 
@@ -206,7 +227,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
     	
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		int tStatus = response.getStatus();	
 
 		assertEquals("Post returned a non 201 result", 201, tStatus);
@@ -235,7 +256,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		int tStatus = response.getStatus();	
 
 		assertEquals("Post returned a non 201 result", 201, tStatus);
@@ -269,7 +290,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		int tStatus = response.getStatus();	
 
 		assertEquals("Post returned a non 401 result", 401, tStatus);
@@ -301,7 +322,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		int tStatus = response.getStatus();	
 
 		assertEquals("Post returned a non 201 result", 201, tStatus);
@@ -327,7 +348,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		int tStatus = response.getStatus();	
 
 		assertEquals("Post returned a non 201 result", 201, tStatus);
@@ -354,7 +375,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		int tStatus = response.getStatus();	
 
 		assertEquals("Post returned a non 201 result", 201, tStatus);
@@ -386,7 +407,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		int tStatus = response.getStatus();	
 
 		assertEquals("Post returned a non 201 result", 201, tStatus);
@@ -419,7 +440,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		
 		int tStatus = response.getStatus();	
 
@@ -447,7 +468,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		
 		int tStatus = response.getStatus();	
 
@@ -482,7 +503,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		
 		int tStatus = response.getStatus();	
 
@@ -512,7 +533,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		
 		int tStatus = response.getStatus();	
 
@@ -526,7 +547,7 @@ public class IntegrationTests {
 		assertNotNull("Missing Location in header", tLocation);
 		String [] parts = tLocation.split("/");
 		
-		response = test.getDepositEntry(parts[parts.length - 2], parts[parts.length - 1]);
+		response = test.getDepositEntry(parts[parts.length - 2], parts[parts.length - 1], mockContext);
 		
 		tStatus = response.getStatus();
 		assertEquals("Get returned a non 200 result", 200, tStatus);
@@ -552,7 +573,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		
 		int tStatus = response.getStatus();	
 
@@ -584,7 +605,7 @@ public class IntegrationTests {
     	test.setServletRequest(req);
     	test.init();
 		
-    	Response response = test.postDeposit("test");
+    	Response response = test.postDeposit("test", mockContext, mockUriInfo);
 		
 		int tStatus = response.getStatus();	
 
@@ -615,6 +636,16 @@ public class IntegrationTests {
 
 		Element tPackaging = tEntityDoc.getRootElement().getChild("packaging", SWORD);
 		assertNotNull("Missing packaging element", tPackaging);
+	}
+	
+	private static DOReader getMockReader(String pid) {
+		DOReader mock = mock(DOReader.class);
+		try {
+			when(mock.GetObjectPID()).thenReturn(pid);
+		} catch (ServerException e) {
+			e.printStackTrace();
+		}
+		return mock;
 	}
 	
 	public static ServletInputStream getEmptyMockStream() {

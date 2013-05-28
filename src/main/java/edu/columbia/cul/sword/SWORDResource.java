@@ -11,6 +11,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +31,9 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
+import org.fcrepo.server.MultiValueMap;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.Server;
 import org.fcrepo.server.access.Access;
@@ -41,6 +44,7 @@ import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.rest.BaseRestResource;
 import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
+import org.fcrepo.utilities.DateUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -72,14 +76,10 @@ public class SWORDResource extends BaseRestResource {
 
 
     private static AtomicInteger counter = new AtomicInteger(0);
+    
+    private static ReadOnlyContext READ_ONLY_CONTEXT = readOnlyContext();
 
-    @javax.ws.rs.core.Context
     protected ServletContext m_context;
-
-    @javax.ws.rs.core.Context
-    protected UriInfo m_uriInfo;
-
-    private String m_authn;
 
     private int m_maxUpload;
 
@@ -92,56 +92,68 @@ public class SWORDResource extends BaseRestResource {
     private String m_realm;
     
     Set<String> m_collectionPids = null;
+    
+    private static final ReadOnlyContext readOnlyContext() {
+    	try {
+            ReadOnlyContext roc = ReadOnlyContext.getContext("internal", "", null, false);
+            MultiValueMap env = roc.getEnvironmentAttributes();
+            MultiValueMap newEnv = new MultiValueMap();
+            Iterator<String> names = env.names();
+            while(names.hasNext()) {
+            	String name = names.next();
+            	newEnv.set(name, env.getStringArray(name));
+            }
+            newEnv.set(Constants.HTTP_REQUEST.SECURITY.uri,
+            		Constants.HTTP_REQUEST.INSECURE.uri);
+            roc.setEnvironmentValues(newEnv);
+            return roc;
+    	} catch (Exception e) {
+    		log.warn(e.getMessage(), e);
+    		return ReadOnlyContext.EMPTY;
+    	}
+    }
 
     public SWORDResource(Server server) throws JAXBException, BeansException, ServerException {
     	super(server);
         m_sword = new FedoraService(
         		server.getBean(Authorization.class),
         		server.getBean(DOManager.class),
-        		server.getBean(ResourceIndex.class),
-        		m_uriInfo);
-        m_repoInfo = server.getBean(Access.class).describeRepository(ReadOnlyContext.EMPTY);
+        		server.getBean(ResourceIndex.class));
+        m_repoInfo = ((Access)server.getBean(Access.class.getName())).describeRepository(READ_ONLY_CONTEXT);
     }
     
-    // testing convenience method
     public void setServletContext(ServletContext context) {
     	m_context = context;
-    }
-    
-    // testing convenience method
-    public void setServletRequest(HttpServletRequest request) {
-    	m_servletRequest = request;
-    }
-    
-    // testing convenience method
-    public void setUriInfo(UriInfo uriInfo) {
-    	m_uriInfo = uriInfo;
-    }
-    
-    public void setMembershipPredicate(String predicate) {
-    	m_sword.setMembershipRel(predicate);
-    }
-    
-    public void setDepositHandlers(Map<String, DepositHandler> handlers) {
-    	m_sword.setDepositHandlers(handlers);
-    }
-    
-    public void setCollectionPids(Collection<String> collectionPids) {
-    	m_collectionPids = new HashSet<String>(collectionPids);
-    	m_sword.setCollections(m_collectionPids);
-    }
-
-    public void init() throws InitializationException {
-        m_authn = m_context.getInitParameter("authentication-method");
-        if ((m_authn == null) || (m_authn.equals(""))) {
-            m_authn = "None";
-        }
-        log.info("Authentication type set to: " + m_authn);
-        
-        if (m_collectionPids == null) {
-        	m_collectionPids = new HashSet<String>(0);
-        }
-
+    	String tempDirectory = m_context.getInitParameter(
+    			"upload-temp-directory");
+    	if ((tempDirectory == null) || (tempDirectory.equals(""))) {
+    		tempDirectory = System.getProperty("java.io.tmpdir");
+    	}
+    	if (!tempDirectory.endsWith(System.getProperty("file.separator")))
+    	{
+    		tempDirectory += System.getProperty("file.separator");
+    	}
+    	m_tempDir = new File(tempDirectory);
+    	log.info("Upload temporary directory set to: " + m_tempDir.getPath());
+    	if (!m_tempDir.exists()) {
+    		if (!m_tempDir.mkdirs()) {
+        		log.error("Upload directory did not exist and I can't create it. {}", m_tempDir.getPath());
+    			throw new IllegalArgumentException(
+    					"Upload directory did not exist and I can't create it. "
+    							+ m_tempDir.getPath());
+    		}
+    	}
+    	if (!m_tempDir.isDirectory()) {
+    		log.error("Upload temporary directory is not a directory: {}", m_tempDir.getPath());
+    		throw new IllegalArgumentException(
+    				"Upload temporary directory is not a directory: " + m_tempDir.getPath());
+    	}
+    	if (!m_tempDir.canWrite()) {
+    		log.error("Upload temporary directory cannot be written to: {}", m_tempDir.getPath());
+    		throw new IllegalArgumentException(
+    				"Upload temporary directory cannot be written to: "
+    						+ m_tempDir.getPath());
+    	}
         String maxUploadSizeStr = m_context.getInitParameter("maxUploadSize");
         if ((maxUploadSizeStr == null) ||
                 (maxUploadSizeStr.equals("")) ||
@@ -158,35 +170,42 @@ public class SWORDResource extends BaseRestResource {
             }
         }
 
-        String tempDirectory = m_context.getInitParameter(
-                "upload-temp-directory");
-        if ((tempDirectory == null) || (tempDirectory.equals(""))) {
-            tempDirectory = System.getProperty("java.io.tmpdir");
+    }
+    
+    // testing convenience method
+    public void setServletRequest(HttpServletRequest request) {
+    	m_servletRequest = request;
+    }
+    
+    public void setMembershipPredicate(String predicate) {
+    	m_sword.setMembershipRel(predicate);
+    }
+    
+    public void setDepositHandlers(Map<String, DepositHandler> handlers) {
+    	m_sword.setDepositHandlers(handlers);
+    }
+    
+    public void setCollectionPids(Collection<String> collectionPids) {
+    	m_collectionPids = new HashSet<String>(collectionPids);
+    	m_sword.setCollections(m_collectionPids);
+    }
+    
+    private String getAuthenticationMethod() {
+        String authn = m_context.getInitParameter("authentication-method");
+        if ((authn == null) || (authn.equals(""))) {
+        	authn = "None";
         }
-        if (!tempDirectory.endsWith(System.getProperty("file.separator")))
-        {
-            tempDirectory += System.getProperty("file.separator");
+        log.info("Authentication type set to:{}", authn);
+        return authn;
+    }
+
+    public void init() throws InitializationException {
+        
+        if (m_collectionPids == null) {
+        	setCollectionPids(new HashSet<String>(0));
         }
-        m_tempDir = new File(tempDirectory);
-        log.info("Upload temporary directory set to: " + m_tempDir);
-        if (!m_tempDir.exists()) {
-            if (!m_tempDir.mkdirs()) {
-                throw new InitializationException(
-                        "Upload directory did not exist and I can't create it. "
-                                + m_tempDir);
-            }
-        }
-        if (!m_tempDir.isDirectory()) {
-            log.error("Upload temporary directory is not a directory: {}", m_tempDir);
-            throw new InitializationException(
-                    "Upload temporary directory is not a directory: " + m_tempDir);
-        }
-        if (!m_tempDir.canWrite()) {
-            log.error("Upload temporary directory cannot be written to: {}", m_tempDir);
-            throw new InitializationException(
-                    "Upload temporary directory cannot be written to: "
-                            + m_tempDir);
-        }
+
+    	m_sword.init();
 
     }
 
@@ -201,7 +220,10 @@ public class SWORDResource extends BaseRestResource {
     @GET
     @Path("/service.atomsvc")
     @Produces("text/xml")
-    public Response getDefaultServiceDocument() {
+    public Response getDefaultServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext) {
+
+    	if (m_context == null) setServletContext(servletContext);
+
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
 
     	if (!request.authenticated() && authenticateWithBasic()) {
@@ -241,7 +263,13 @@ public class SWORDResource extends BaseRestResource {
     @GET
     @Path("/{collection}/service.atomsvc")
     @Produces("text/xml")
-    public Response getServiceDocument(@PathParam("collection") String collection) {
+    public Response getServiceDocument(
+    		@PathParam("collection") String collection,
+    		@javax.ws.rs.core.Context ServletContext servletContext
+    		) {
+    	
+    	if (m_context == null) setServletContext(servletContext);
+
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
 
     	if (!request.authenticated() && authenticateWithBasic()) {
@@ -293,7 +321,12 @@ public class SWORDResource extends BaseRestResource {
     @GET
     @Path("/{collection}")
     @Produces("text/xml")
-    public Response getFeed(@PathParam("collection") String collection) {
+    public Response getFeed(
+    		@PathParam("collection") String collection,
+    		@javax.ws.rs.core.Context ServletContext servletContext
+    		) {
+    	
+    	if (m_context == null) setServletContext(servletContext);
 
         AtomEntryRequest adr = new AtomEntryRequest(m_servletRequest);
         if (!adr.authenticated() && authenticateWithBasic()) {
@@ -348,12 +381,18 @@ public class SWORDResource extends BaseRestResource {
     @POST
     @Path("/{collection}")
     @Produces("text/xml")
-    public Response postDeposit(@PathParam("collection") String collection) {
+    public Response postDeposit(
+    		@PathParam("collection") String collection,
+    		@javax.ws.rs.core.Context ServletContext servletContext,
+    		@javax.ws.rs.core.Context UriInfo uriInfo) {
+    	
+    	if (m_context == null) setServletContext(servletContext);
+
         DepositRequest deposit = null;
         try {
             deposit = new DepositRequest(m_servletRequest);
             deposit.setCollection(collection);
-            deposit.setBaseUri(m_uriInfo);
+            deposit.setBaseUri(uriInfo);
             deposit.setGenerator(m_repoInfo);
         } catch (SWORDException e) {
             return errorResponse(e.reason,
@@ -457,7 +496,10 @@ public class SWORDResource extends BaseRestResource {
     @Produces("text/xml")
     public Response getDepositEntry(
     		@PathParam("collection") String collectionId,
-    		@PathParam("deposit") String depositId) {
+    		@PathParam("deposit") String depositId,
+    		@javax.ws.rs.core.Context ServletContext servletContext) {
+    	
+    	if (m_context == null) setServletContext(servletContext);
 
     	DepositRequest deposit = null;
         try {
@@ -504,7 +546,7 @@ public class SWORDResource extends BaseRestResource {
      * @return if HTTP Basic authentication is in use or not
      */
     protected boolean authenticateWithBasic() {
-        return "Basic".equalsIgnoreCase(m_authn);
+        return "Basic".equalsIgnoreCase(getAuthenticationMethod());
     }
     
     public static Response authnRequiredResponse(String realm) {

@@ -49,17 +49,14 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 	
 	private Set<String> m_collectionIds;
 	
-	private UriInfo m_uriInfo;
-
     private Map<String, DepositHandler> m_handlers;
     
     private String m_workspace_title = "FCRepo SWORD Workspace";
 
-	public FedoraService(Authorization authz, DOManager manager, ResourceIndex resourceIndex, UriInfo uriInfo) {
+	public FedoraService(Authorization authz, DOManager manager, ResourceIndex resourceIndex) {
 		m_authz = authz;
 		m_manager = manager;
 		m_resourceIndex = resourceIndex;
-		m_uriInfo = uriInfo;
 		m_rels = new HashSet<String>(1);
 		m_rels.add(RELS_EXT.IS_MEMBER_OF.uri);
 	}
@@ -116,31 +113,20 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 	
 	public Collection getCollection(String collectionId,
 			Context context) throws SWORDException {
-		try {
-			if (!m_collectionIds.contains(collectionId)) {
-				throw new SWORDException(SWORDException.ERROR_REQUEST);
-			}
-			if (!m_manager.objectExists(collectionId)) {
-				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-			}
-			DOReader reader = m_manager.getReader(false, context, collectionId);
-			DCFields dcf = new DCFields(reader.getDatastream("DC", null).getContentStream());
-
-			Collection collection = new Collection();
-			for (DepositHandler h: m_handlers.values()) {
-				collection.addAcceptableMimeType(h.getContentType());
-				collection.addAcceptablePackaging(URI.create(h.getPackaging()));
-			}
-			collection.setDCFields(dcf);
-			
-			for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.MEDIATION, null)) {
-				collection.mediation = Boolean.valueOf(rel.object);
-			}
-
-            return collection;
-		} catch (ServerException e) {
-			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+		if (!m_collectionIds.contains(collectionId)) {
+			throw new SWORDException(SWORDException.ERROR_REQUEST);
 		}
+
+		Collection collection = new Collection();
+		DCFields dcf = FedoraUtils.getDCFields(context, m_manager, collectionId);
+		collection.setDCFields(dcf);
+		collection.mediation = FedoraUtils.isMediated(context, m_manager, collectionId);
+		for (DepositHandler h: m_handlers.values()) {
+			collection.addAcceptableMimeType(h.getContentType());
+			collection.addAcceptablePackaging(URI.create(h.getPackaging()));
+		}
+
+		return collection;
 	}
 	
 	private DepositHandler getHandler(String contentType, String packaging) throws ServerException {

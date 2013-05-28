@@ -43,7 +43,8 @@ public class ServiceDocumentTest {
 		assertNotNull(ws);
 		assertEquals("Main Site", ws.title);
 		Collection c = ws.getCollection("http://www.myrepository.ac.uk/atom/geography-collection");
-		assertEquals("My Repository : Geography Collection", c.title);
+		assertEquals(1, c.title.size());
+		assertEquals("My Repository : Geography Collection", c.title.get(0));
 		Set<String> accepts = c.getAcceptableMimeTypes();
 		assertEquals(1, accepts.size());
 		assertEquals("application/zip", accepts.iterator().next());

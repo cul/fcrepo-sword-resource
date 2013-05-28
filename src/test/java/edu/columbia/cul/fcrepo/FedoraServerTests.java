@@ -10,6 +10,7 @@ import javax.ws.rs.core.UriInfo;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.resourceIndex.ResourceIndex;
+import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
 import org.junit.After;
 import org.junit.Before;
@@ -34,10 +35,10 @@ public class FedoraServerTests {
     	when(handler.ingestDeposit(any(DepositRequest.class), any(Context.class))).thenReturn(entry);
     	HashMap<String, DepositHandler> handlers = new HashMap<String, DepositHandler>(1);
     	handlers.put("", handler);
+    	Authorization authz = mock(Authorization.class);
     	DOManager mgmt = mock(DOManager.class);
     	ResourceIndex ri = mock(ResourceIndex.class);
-    	UriInfo uriInfo = mock(UriInfo.class);
-    	test = new FedoraService(mgmt, ri, uriInfo);
+    	test = new FedoraService(authz, mgmt, ri);
     	test.setDepositHandlers(handlers);
     }
     

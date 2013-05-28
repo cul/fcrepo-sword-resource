@@ -1,9 +1,12 @@
 package edu.columbia.cul.sword.xml.entry;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "contributor", namespace = "http://www.w3.org/2005/Atom")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Contributor {
 
 	@XmlElement(name ="name")
