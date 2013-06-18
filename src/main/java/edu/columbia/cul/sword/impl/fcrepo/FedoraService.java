@@ -11,6 +11,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
+import org.fcrepo.server.Server;
 import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.rest.DatastreamResource;
@@ -52,17 +53,32 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
     private Map<String, DepositHandler> m_handlers;
     
     private String m_workspace_title = "FCRepo SWORD Workspace";
+    
+    public FedoraService() {
+		m_rels = new HashSet<String>(1);
+		m_rels.add(RELS_EXT.IS_MEMBER_OF.uri);
+    }
+    
+    public FedoraService(Server server) {
+		this();
+		init(server);
+    }
 
 	public FedoraService(Authorization authz, DOManager manager, ResourceIndex resourceIndex) {
+		this();
 		m_authz = authz;
 		m_manager = manager;
 		m_resourceIndex = resourceIndex;
-		m_rels = new HashSet<String>(1);
-		m_rels.add(RELS_EXT.IS_MEMBER_OF.uri);
 	}
 	
     public void setDepositHandlers(Map<String, DepositHandler> handlers) {
     	m_handlers = handlers;
+    }
+    
+    public void init(Server server) {
+    	m_authz = server.getBean(Authorization.class.getName(), Authorization.class);
+    	m_manager = server.getBean(DOManager.class.getName(), DOManager.class);
+    	m_resourceIndex = server.getBean(ResourceIndex.class.getName(), ResourceIndex.class);
     }
 
     /**

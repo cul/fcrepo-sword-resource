@@ -125,10 +125,12 @@ public class DefaultDepositHandler implements DepositHandler {
 				}
 				writer.getContentModels();
 				String subject = PID.toURI(dObj.getPid());
-				writer.addRelationship(
-						subject,
-						SwordConstants.SWORD.SLUG.uri,
-						deposit.getSlug(), true, null);
+				if (deposit.getSlug() != null) {
+				  writer.addRelationship(
+                      	subject,
+                      	SwordConstants.SWORD.SLUG.uri,
+                      	deposit.getSlug(), true, null);
+				}
 				// add any configured object models to the created object
                 for (String cmodel: m_objectCModels) {
                 	writer.addRelationship(

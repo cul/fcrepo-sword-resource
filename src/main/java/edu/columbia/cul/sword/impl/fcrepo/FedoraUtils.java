@@ -1,5 +1,7 @@
 package edu.columbia.cul.sword.impl.fcrepo;
 
+import java.util.Date;
+
 import org.fcrepo.server.Context;
 import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.storage.DOManager;
@@ -19,7 +21,7 @@ public abstract class FedoraUtils {
 			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 		}
 		DOReader reader = manager.getReader(false, context, pid);
-		DCFields dcf = new DCFields(reader.getDatastream("DC", null).getContentStream());
+		DCFields dcf = new DCFields(reader.GetDatastream("DC", new Date()).getContentStream());
         return dcf;
 		} catch (ServerException e) {
 			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
