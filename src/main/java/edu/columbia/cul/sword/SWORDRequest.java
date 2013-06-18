@@ -123,7 +123,8 @@ public abstract class SWORDRequest {
      * @param info
      */
     public void setGenerator(RepositoryInfo info) {
-    	m_generator = new Generator(info.repositoryName, info.repositoryVersion);
+    	//m_generator = new Generator(info.repositoryName, info.repositoryVersion);
+    	m_generator = new Generator(info.repositoryBaseURL, info.repositoryVersion);
     }
 
     public static boolean setCredentials(SWORDRequest sr, HttpServletRequest request) {

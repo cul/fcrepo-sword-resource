@@ -121,6 +121,8 @@ public class SWORDResource extends BaseRestResource {
         		server.getBean(DOManager.class),
         		server.getBean(ResourceIndex.class));
         m_repoInfo = ((Access)server.getBean(Access.class.getName())).describeRepository(READ_ONLY_CONTEXT);
+        
+        init();
     }
     
     public void setServletContext(ServletContext context) {
@@ -160,7 +162,7 @@ public class SWORDResource extends BaseRestResource {
                 (maxUploadSizeStr.equals("")) ||
                 (maxUploadSizeStr.equals("-1"))) {
             m_maxUpload = -1;
-            log.warn("No maxUploadSize set, so setting max file upload size to unlimited.");
+            log.warn("++ No maxUploadSize set, so setting max file upload size to unlimited.");
         } else {
             try {
                 m_maxUpload = Integer.parseInt(maxUploadSizeStr);
@@ -395,7 +397,31 @@ public class SWORDResource extends BaseRestResource {
             deposit = new DepositRequest(m_servletRequest);
             deposit.setCollection(collection);
             deposit.setBaseUri(uriInfo);
+            
+        	
+        	
+        	
+        	
+        	System.out.println("============== LogCheckPoint-2 start");
+
+        	
+        	if(m_repoInfo != null){ // info.repositoryName, info.repositoryVersion
+        		
+        		log.warn("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
+        		log.error("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
+        		log.info("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
+        		
+        		System.out.println("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
+            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryName is null: " + ", " + m_repoInfo.repositoryName);
+            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryVersion is null: " + ", " + m_repoInfo.repositoryVersion);     		
+        	}
+
+        	
+        	System.out.println("============== LogCheckPoint-2 end");
+
+            
             deposit.setGenerator(m_repoInfo);
+            
         } catch (SWORDException e) {
             return errorResponse(e.reason,
                     HttpServletResponse.SC_BAD_REQUEST,
@@ -415,6 +441,13 @@ public class SWORDResource extends BaseRestResource {
             return authnRequiredResponse(m_realm);
         }
         File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));
+        
+        
+        System.out.println("==== file: " + ", " + tempFile.getAbsolutePath()); 
+        System.out.println("==== file: " + ", " + tempFile.getName());
+        System.out.println("==== file: " + ", " + tempFile.getPath());
+        
+        
         InputStream in = null;
         OutputStream out = null;
         try {
@@ -509,6 +542,13 @@ public class SWORDResource extends BaseRestResource {
         	deposit.setCollection(collectionId);
         	deposit.setDepositId(depositId);
         	deposit.setBaseUri(m_uriInfo);
+        	
+        	
+        	String logCheckPoint1 = "============== LogCheckPoint-1 ==============";
+        	System.out.println(logCheckPoint1);
+        	log.debug(logCheckPoint1);
+        	
+        	
         	deposit.setGenerator(m_repoInfo);
         	Context authzContext;
         	if (deposit.isProxied()){

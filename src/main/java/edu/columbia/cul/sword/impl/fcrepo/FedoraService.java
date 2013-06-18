@@ -127,8 +127,18 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		return result;
 	}
 	
-	public Collection getCollection(String collectionId,
-			Context context) throws SWORDException {
+	public Collection getCollection(String collectionId, Context context) throws SWORDException {
+		
+		int count = 0;
+		
+		System.out.println("======= collection size: " + m_collectionIds.size() );
+		
+		for(String collection : m_collectionIds){
+			System.out.println("collection-" + ++count + ": " + collection);
+		}
+		
+		System.out.println("======= collection end ++ ======= ");
+		
 		if (!m_collectionIds.contains(collectionId)) {
 			throw new SWORDException(SWORDException.ERROR_REQUEST);
 		}

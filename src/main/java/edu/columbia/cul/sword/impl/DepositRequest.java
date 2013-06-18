@@ -41,6 +41,20 @@ public class DepositRequest extends SWORDRequest {
         m_noOp = booleanValue(request.getHeader(org.purl.sword.base.HttpHeaders.X_NO_OP), "noOp");
         m_verbose = booleanValue(request.getHeader(org.purl.sword.base.HttpHeaders.X_VERBOSE), "verbose");
         m_slug = request.getHeader(org.purl.sword.base.HttpHeaders.SLUG);
+        
+        
+        System.out.println("\n= LogCheckPoint-3 start ===========================");
+        System.out.println("== LogCheckPoint-3, m_contentDisposition: " + m_contentDisposition);
+        System.out.println("== LogCheckPoint-3, m_md5: " + m_md5);
+        System.out.println("== LogCheckPoint-3, m_contentType: " + m_contentType);
+        System.out.println("== LogCheckPoint-3, m_contentLength: " + m_contentLength);
+        System.out.println("== LogCheckPoint-3, m_packaging: " + m_packaging);
+        System.out.println("== LogCheckPoint-3, m_noOp: " + m_noOp);
+        System.out.println("== LogCheckPoint-3, m_verbose: " + m_verbose);
+        System.out.println("== LogCheckPoint-3, m_slug: " + m_slug);
+        System.out.println("= LogCheckPoint-3 end =============================");
+        
+        
     }
     
     public void setContentType(String contentType) {

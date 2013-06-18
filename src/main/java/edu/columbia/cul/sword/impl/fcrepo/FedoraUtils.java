@@ -21,6 +21,7 @@ public abstract class FedoraUtils {
 			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 		}
 		DOReader reader = manager.getReader(false, context, pid);
+
 		DCFields dcf = new DCFields(reader.GetDatastream("DC", new Date()).getContentStream());
         return dcf;
 		} catch (ServerException e) {
