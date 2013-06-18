@@ -397,29 +397,16 @@ public class SWORDResource extends BaseRestResource {
             deposit = new DepositRequest(m_servletRequest);
             deposit.setCollection(collection);
             deposit.setBaseUri(uriInfo);
-            
-        	
-        	
-        	
-        	
-        	System.out.println("============== LogCheckPoint-2 start");
 
-        	
-        	if(m_repoInfo != null){ // info.repositoryName, info.repositoryVersion
-        		
-        		log.warn("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
-        		log.error("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
-        		log.info("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
-        		
-        		System.out.println("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL is null: " + ", " + m_repoInfo.repositoryBaseURL);
-            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryName is null: " + ", " + m_repoInfo.repositoryName);
-            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryVersion is null: " + ", " + m_repoInfo.repositoryVersion);     		
-        	}
+            //  will remore following par
+            //            
+//        	if(m_repoInfo != null){ 
+//        		
+//        		System.out.println("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL: " + ", " + m_repoInfo.repositoryBaseURL);
+//            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryName: " + ", " + m_repoInfo.repositoryName);
+//            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryVersion: " + ", " + m_repoInfo.repositoryVersion);     		
+//        	}
 
-        	
-        	System.out.println("============== LogCheckPoint-2 end");
-
-            
             deposit.setGenerator(m_repoInfo);
             
         } catch (SWORDException e) {
@@ -436,20 +423,20 @@ public class SWORDResource extends BaseRestResource {
         }
     	    	
         Date date = new Date();
+        
         log.debug("Starting deposit processing at {} by {}", date.toString(), deposit.getIPAddress());
+        
         if (!deposit.authenticated() && authenticateWithBasic()) {
             return authnRequiredResponse(m_realm);
         }
-        File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));
         
+        File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
         
-        System.out.println("==== file: " + ", " + tempFile.getAbsolutePath()); 
-        System.out.println("==== file: " + ", " + tempFile.getName());
-        System.out.println("==== file: " + ", " + tempFile.getPath());
-        
-        
+        log.debug("Temp file: {}", tempFile.getAbsolutePath());
+
         InputStream in = null;
         OutputStream out = null;
+        
         try {
 
         	Context authzContext;
@@ -474,10 +461,12 @@ public class SWORDResource extends BaseRestResource {
                     out.write(buf, 0, len);
                 }
             } catch (IOException e) {
+            	
                 return errorResponse(SWORDException.IO_ERROR.error,
                         HttpServletResponse.SC_SERVICE_UNAVAILABLE,
                         e.getMessage(),
                         m_servletRequest);
+                
             } finally {
             	try {
             		if (out != null) {
@@ -489,26 +478,39 @@ public class SWORDResource extends BaseRestResource {
             		e.printStackTrace();
             	}
             }
+            
             long fLen = tempFile.length();
+
             if ((m_maxUpload != -1) && (fLen > m_maxUpload)) {
-                return errorResponse(SWORDException.MAX_UPLOAD_SIZE_EXCEEDED.error,
+            	
+            	String errMsg = "Maximum upload size (" + m_maxUpload + ") exceeded by input (" + fLen + ")";
+            	log.error(errMsg);
+                
+            	return errorResponse(SWORDException.MAX_UPLOAD_SIZE_EXCEEDED.error,
                         HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
-                        "Maximum upload size (" + m_maxUpload + ") exceeded by input (" + fLen + ")",
+                        errMsg,
                         m_servletRequest);
             }
+            
             String actualMD5 = ChecksumUtils.generateMD5(tempFile.getPath());
+            
             log.debug("Received checksum header {}", deposit.getMD5());
             log.debug("Calculated file checksum {}", actualMD5);
+            
             if (!actualMD5.equals(deposit.getMD5())){
-                log.debug("Bad MD5 for file. Aborting with appropriate error message");
+            	String errMsg = "Received upload MD5 (" + deposit.getMD5() + ") did not match actual (" + actualMD5 + ")";
+            	log.error(errMsg);
+            	
                 return errorResponse(SWORDException.ERROR_CHECKSUM.error,
                         HttpServletResponse.SC_PRECONDITION_FAILED,
-                        "Received upload MD5 (" + deposit.getMD5() + ") did not match actual (" + actualMD5 + ")",
+                        errMsg,
                         m_servletRequest);
             }
+            
             deposit.setFile(tempFile);
             String location = null;
             Entry entry = m_sword.createEntry(deposit, authzContext);
+
             for (Link link: entry.getLinks()){
             	if (link.isDescription()) location = link.getHref().toString();
             }
@@ -517,7 +519,9 @@ public class SWORDResource extends BaseRestResource {
                     .header(HttpHeaders.LOCATION, location)
                     .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
                     .entity(entry).build();
+            
             return response;
+            
         } catch (SWORDException e) {
         	System.err.println(e.toString());
         	e.printStackTrace();
@@ -542,13 +546,7 @@ public class SWORDResource extends BaseRestResource {
         	deposit.setCollection(collectionId);
         	deposit.setDepositId(depositId);
         	deposit.setBaseUri(m_uriInfo);
-        	
-        	
-        	String logCheckPoint1 = "============== LogCheckPoint-1 ==============";
-        	System.out.println(logCheckPoint1);
-        	log.debug(logCheckPoint1);
-        	
-        	
+
         	deposit.setGenerator(m_repoInfo);
         	Context authzContext;
         	if (deposit.isProxied()){

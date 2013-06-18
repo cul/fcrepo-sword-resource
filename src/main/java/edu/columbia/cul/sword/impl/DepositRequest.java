@@ -9,12 +9,18 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.columbia.cul.sword.HttpHeaders;
 import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.SWORDRequest;
+import edu.columbia.cul.sword.SWORDResource;
 
 
 public class DepositRequest extends SWORDRequest {
+	
+	private static final Logger log = LoggerFactory.getLogger(DepositRequest.class.getName());
 
     public static Pattern FILENAME = Pattern.compile(".*filename=(.*?)((; *.*)|( +)){0,1}");
     private String m_depositId;
@@ -31,7 +37,9 @@ public class DepositRequest extends SWORDRequest {
     private InputStream m_file;
 
     public DepositRequest(HttpServletRequest request) throws SWORDException {
-        super(request);
+        
+    	super(request);
+        
         m_contentDisposition = request.getHeader(HttpHeaders.CONTENT_DISPOSITION.toString());
         m_md5 = request.getHeader(org.purl.sword.base.HttpHeaders.CONTENT_MD5.toString());
         m_contentType = request.getContentType();
@@ -41,20 +49,15 @@ public class DepositRequest extends SWORDRequest {
         m_noOp = booleanValue(request.getHeader(org.purl.sword.base.HttpHeaders.X_NO_OP), "noOp");
         m_verbose = booleanValue(request.getHeader(org.purl.sword.base.HttpHeaders.X_VERBOSE), "verbose");
         m_slug = request.getHeader(org.purl.sword.base.HttpHeaders.SLUG);
-        
-        
-        System.out.println("\n= LogCheckPoint-3 start ===========================");
-        System.out.println("== LogCheckPoint-3, m_contentDisposition: " + m_contentDisposition);
-        System.out.println("== LogCheckPoint-3, m_md5: " + m_md5);
-        System.out.println("== LogCheckPoint-3, m_contentType: " + m_contentType);
-        System.out.println("== LogCheckPoint-3, m_contentLength: " + m_contentLength);
-        System.out.println("== LogCheckPoint-3, m_packaging: " + m_packaging);
-        System.out.println("== LogCheckPoint-3, m_noOp: " + m_noOp);
-        System.out.println("== LogCheckPoint-3, m_verbose: " + m_verbose);
-        System.out.println("== LogCheckPoint-3, m_slug: " + m_slug);
-        System.out.println("= LogCheckPoint-3 end =============================");
-        
-        
+
+        log.debug("m_contentDisposition: {}", m_contentDisposition);
+        log.debug("m_md5: {}", m_md5);
+        log.debug("m_contentType: {}", m_contentType);
+        log.debug("m_contentLength: {}", m_contentLength);
+        log.debug("m_packaging: {}", m_packaging);
+        log.debug("m_noOp: {}", m_noOp);
+        log.debug("m_verbose: {}", m_verbose);
+        log.debug("m_slug: {}", m_slug);
     }
     
     public void setContentType(String contentType) {
