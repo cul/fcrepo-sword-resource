@@ -78,7 +78,7 @@ public class SWORDResource extends BaseRestResource {
     
     private static ReadOnlyContext READ_ONLY_CONTEXT = readOnlyContext();
 
-    //@javax.ws.rs.core.Context
+    @javax.ws.rs.core.Context
     protected ServletContext m_context;
 
     private int m_maxUpload;
