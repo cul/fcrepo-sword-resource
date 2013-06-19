@@ -21,9 +21,6 @@ public class Generator {
     private String content;
     
     public Generator(String generator, String version) {
-    	
-    	System.out.println("============== LogCheckPoint-3 inside Generator: " + generator + ", " + version);
-    	
     	this.uri = URI.create(generator);
     	this.version = (version != null)? version : "1.0";
     }

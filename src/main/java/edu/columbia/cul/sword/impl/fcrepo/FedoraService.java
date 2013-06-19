@@ -21,6 +21,8 @@ import org.fcrepo.server.storage.DOManager;
 import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.columbia.cul.fcrepo.Utils;
 import edu.columbia.cul.sword.DepositHandler;
@@ -39,6 +41,8 @@ import edu.columbia.cul.sword.xml.service.ServiceDocument;
 import edu.columbia.cul.sword.xml.service.Workspace;
 
 public class FedoraService implements ServiceDocumentService, EntryService, Constants {
+	
+	private static final Logger log = LoggerFactory.getLogger(FedoraService.class.getName());
 	
 	private Authorization m_authz;
 	
@@ -128,17 +132,7 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 	}
 	
 	public Collection getCollection(String collectionId, Context context) throws SWORDException {
-		
-		int count = 0;
-		
-		System.out.println("======= collection size: " + m_collectionIds.size() );
-		
-		for(String collection : m_collectionIds){
-			System.out.println("collection-" + ++count + ": " + collection);
-		}
-		
-		System.out.println("======= collection end ++ ======= ");
-		
+
 		if (!m_collectionIds.contains(collectionId)) {
 			throw new SWORDException(SWORDException.ERROR_REQUEST);
 		}
@@ -147,6 +141,7 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		DCFields dcf = FedoraUtils.getDCFields(context, m_manager, collectionId);
 		collection.setDCFields(dcf);
 		collection.mediation = FedoraUtils.isMediated(context, m_manager, collectionId);
+		
 		for (DepositHandler h: m_handlers.values()) {
 			collection.addAcceptableMimeType(h.getContentType());
 			collection.addAcceptablePackaging(URI.create(h.getPackaging()));

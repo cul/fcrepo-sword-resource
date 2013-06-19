@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -26,8 +27,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.UriInfo;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
 import org.apache.commons.httpclient.HttpStatus;
@@ -44,13 +45,11 @@ import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.rest.BaseRestResource;
 import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
-import org.fcrepo.utilities.DateUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.stereotype.Component;
 
-import edu.columbia.cul.sword.DepositHandler;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
@@ -79,7 +78,7 @@ public class SWORDResource extends BaseRestResource {
     
     private static ReadOnlyContext READ_ONLY_CONTEXT = readOnlyContext();
 
-    @javax.ws.rs.core.Context
+    //@javax.ws.rs.core.Context
     protected ServletContext m_context;
 
     private int m_maxUpload;
@@ -116,22 +115,50 @@ public class SWORDResource extends BaseRestResource {
 
     public SWORDResource(Server server) throws JAXBException, BeansException, ServerException {
     	super(server);
-        m_sword = new FedoraService(
+        
+    	m_sword = new FedoraService(
         		server.getBean(Authorization.class),
         		server.getBean(DOManager.class),
         		server.getBean(ResourceIndex.class));
+    	
         m_repoInfo = ((Access)server.getBean(Access.class.getName())).describeRepository(READ_ONLY_CONTEXT);
+   
+        log.debug("RepositoryInfo.repositoryName:          {}", m_repoInfo.repositoryName);
+        log.debug("RepositoryInfo.repositoryBaseURL:       {}", m_repoInfo.repositoryBaseURL);
+        log.debug("RepositoryInfo.repositoryVersion:       {}", m_repoInfo.repositoryVersion);
+        log.debug("RepositoryInfo.repositoryPIDNamespace:  {}", m_repoInfo.repositoryPIDNamespace);
+        log.debug("RepositoryInfo.defaultExportFormat:     {}", m_repoInfo.defaultExportFormat);
+        log.debug("RepositoryInfo.OAINamespace:            {}", m_repoInfo.OAINamespace);
+        log.debug("RepositoryInfo.adminEmailList:          {}", Arrays.asList(m_repoInfo.adminEmailList));
+        log.debug("RepositoryInfo.samplePID:               {}", m_repoInfo.samplePID);
+        log.debug("RepositoryInfo.sampleOAIIdentifer:      {}", m_repoInfo.sampleOAIIdentifer);
+        log.debug("RepositoryInfo.sampleSearchURL:         {}", m_repoInfo.sampleSearchURL);
+        log.debug("RepositoryInfo.sampleAccessURL:         {}", m_repoInfo.sampleAccessURL);
+        log.debug("RepositoryInfo.sampleOAIURL:            {}", m_repoInfo.sampleOAIURL);
+        log.debug("RepositoryInfo.retainPIDs:              {}", Arrays.asList(m_repoInfo.retainPIDs));
         
         init();
     }
     
     public void setServletContext(ServletContext context) {
-    	m_context = context;
+
+    	if (m_context == null) {
+    		m_context = context;
+    	}
+    	
+    	if(m_context == null){
+    		log.error("ServletContext not provided +3+");
+    	}
+    	
+    	log.debug("started setServletContext +3+");
+    	
+    	
     	String tempDirectory = m_context.getInitParameter(
     			"upload-temp-directory");
     	if ((tempDirectory == null) || (tempDirectory.equals(""))) {
     		tempDirectory = System.getProperty("java.io.tmpdir");
     	}
+    	
     	if (!tempDirectory.endsWith(System.getProperty("file.separator")))
     	{
     		tempDirectory += System.getProperty("file.separator");
@@ -146,6 +173,7 @@ public class SWORDResource extends BaseRestResource {
     							+ m_tempDir.getPath());
     		}
     	}
+    	
     	if (!m_tempDir.isDirectory()) {
     		log.error("Upload temporary directory is not a directory: {}", m_tempDir.getPath());
     		throw new IllegalArgumentException(
@@ -190,14 +218,22 @@ public class SWORDResource extends BaseRestResource {
     
     public void setCollectionPids(Collection<String> collectionPids) {
     	m_collectionPids = new HashSet<String>(collectionPids);
-    	m_sword.setCollections(m_collectionPids);
-    }
+		m_sword.setCollections(m_collectionPids);
+
+		int count = 0;
+		log.info("collectionIds size: " + m_collectionPids.size());
+		for (String collection : m_collectionPids) {
+			log.info("collection-{} {}", ++count, collection);
+		}
+
+	}
     
     private String getAuthenticationMethod() {
         String authn = m_context.getInitParameter("authentication-method");
         if ((authn == null) || (authn.equals(""))) {
         	authn = "None";
         }
+        
         log.info("Authentication type set to:{}", authn);
         return authn;
     }
@@ -226,7 +262,7 @@ public class SWORDResource extends BaseRestResource {
     @Produces("text/xml")
     public Response getDefaultServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext) {
 
-    	if (m_context == null) setServletContext(servletContext);
+    	setServletContext(servletContext);
 
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
 
@@ -272,7 +308,7 @@ public class SWORDResource extends BaseRestResource {
     		@javax.ws.rs.core.Context ServletContext servletContext
     		) {
     	
-    	if (m_context == null) setServletContext(servletContext);
+    	setServletContext(servletContext);
 
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
 
@@ -330,7 +366,7 @@ public class SWORDResource extends BaseRestResource {
     		@javax.ws.rs.core.Context ServletContext servletContext
     		) {
     	
-    	if (m_context == null) setServletContext(servletContext);
+    	setServletContext(servletContext);
 
         AtomEntryRequest adr = new AtomEntryRequest(m_servletRequest);
         if (!adr.authenticated() && authenticateWithBasic()) {
@@ -389,33 +425,27 @@ public class SWORDResource extends BaseRestResource {
     		@PathParam("collection") String collection,
     		@javax.ws.rs.core.Context ServletContext servletContext,
     		@javax.ws.rs.core.Context UriInfo uriInfo) {
-    	
-    	if (m_context == null) setServletContext(servletContext);
+
+        setServletContext(servletContext);
 
         DepositRequest deposit = null;
+
         try {
+        	
             deposit = new DepositRequest(m_servletRequest);
             deposit.setCollection(collection);
             deposit.setBaseUri(uriInfo);
-
-            //  will remore following par
-            //            
-//        	if(m_repoInfo != null){ 
-//        		
-//        		System.out.println("============== LogCheckPoint-2.2 m_repoInfo.repositoryBaseURL: " + ", " + m_repoInfo.repositoryBaseURL);
-//            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryName: " + ", " + m_repoInfo.repositoryName);
-//            	System.out.println("============== LogCheckPoint-2 m_repoInfo.repositoryVersion: " + ", " + m_repoInfo.repositoryVersion);     		
-//        	}
-
-            deposit.setGenerator(m_repoInfo);
+            deposit.setGenerator(m_repoInfo); 
             
         } catch (SWORDException e) {
+        	
             return errorResponse(e.reason,
                     HttpServletResponse.SC_BAD_REQUEST,
                     e.getMessage(),
                     m_servletRequest);
         }
         if ("reject".equals(deposit.getOnBehalfOf())){
+        	
             return errorResponse(SWORDException.OWNER_UNKNOWN.error,
                     HttpServletResponse.SC_FORBIDDEN,
                     "unknown use \"reject\"",
@@ -515,12 +545,12 @@ public class SWORDResource extends BaseRestResource {
             	if (link.isDescription()) location = link.getHref().toString();
             }
 
-            Response response = Response.status(HttpStatus.SC_CREATED)
-                    .header(HttpHeaders.LOCATION, location)
-                    .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
-                    .entity(entry).build();
+            ResponseBuilder responseBuilder  = Response.status(HttpStatus.SC_CREATED);
+            if (location != null) { responseBuilder.header(HttpHeaders.LOCATION, location); }
+            responseBuilder.header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE);
+            responseBuilder.entity(entry);
             
-            return response;
+            return responseBuilder.build();
             
         } catch (SWORDException e) {
         	System.err.println(e.toString());
@@ -538,7 +568,7 @@ public class SWORDResource extends BaseRestResource {
     		@PathParam("deposit") String depositId,
     		@javax.ws.rs.core.Context ServletContext servletContext) {
     	
-    	if (m_context == null) setServletContext(servletContext);
+    	setServletContext(servletContext);
 
     	DepositRequest deposit = null;
         try {
