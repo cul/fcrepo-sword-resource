@@ -51,13 +51,13 @@ public class DepositRequest extends SWORDRequest {
         m_slug = request.getHeader(org.purl.sword.base.HttpHeaders.SLUG);
 
         log.debug("m_contentDisposition: {}", m_contentDisposition);
-        log.debug("m_md5: {}", m_md5);
-        log.debug("m_contentType: {}", m_contentType);
-        log.debug("m_contentLength: {}", m_contentLength);
-        log.debug("m_packaging: {}", m_packaging);
-        log.debug("m_noOp: {}", m_noOp);
-        log.debug("m_verbose: {}", m_verbose);
-        log.debug("m_slug: {}", m_slug);
+        log.debug("m_md5:                {}", m_md5);
+        log.debug("m_contentType:        {}", m_contentType);
+        log.debug("m_contentLength:      {}", m_contentLength);
+        log.debug("m_packaging:          {}", m_packaging);
+        log.debug("m_noOp:               {}", m_noOp);
+        log.debug("m_verbose:            {}", m_verbose);
+        log.debug("m_slug:               {}", m_slug);
     }
     
     public void setContentType(String contentType) {

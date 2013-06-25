@@ -11,7 +11,7 @@ public class TemplateInputStream  extends ByteArrayInputStream {
 	private static final Charset utf8 = Charset.forName("UTF-8");
 	private static final byte[][] templateParts = getTemplateParts();
 
-	protected TemplateInputStream(String pid, String label, String ownerId) {
+	public TemplateInputStream(String pid, String label, String ownerId) {
 		super(getBytes(pid, label, ownerId));
 	}
 

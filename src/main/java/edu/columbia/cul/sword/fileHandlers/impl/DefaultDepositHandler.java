@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword.impl;
+package edu.columbia.cul.sword.fileHandlers.impl;
 
 import static org.fcrepo.common.Constants.MODEL;
 
@@ -35,10 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.columbia.cul.fcrepo.Utils;
-import edu.columbia.cul.sword.DepositHandler;
 import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.SWORDResource;
 import edu.columbia.cul.sword.SwordConstants;
+import edu.columbia.cul.sword.fileHandlers.DepositHandler;
+import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.impl.TemplateInputStream;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.service.Collection;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;
@@ -46,39 +48,32 @@ import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 public class DefaultDepositHandler implements DepositHandler {
 	
-	private static final Logger logger = LoggerFactory.getLogger(DefaultDepositHandler.class);
-	
-	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";
-	
-	protected String m_contentType = "";
-	
-	protected String m_packaging = null;
-	
-	protected String m_namespace = "sword"; //default
-	
-	private DOManager m_mgmt;
-		
+	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDepositHandler.class);	
+	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";	
+//	protected String m_contentType = "";	
+//	protected String m_packaging = null;	
+	protected String m_contentType;	
+	protected String m_packaging;	
+	protected String m_namespace = "sword"; //default	
+	//private DOManager m_mgmt;		
 	private Set<String> m_collectionIds;
-
-	private Set<String> m_rels; 
-	
+	private Set<String> m_rels; 	
 	private Set<String> m_objectCModels = Collections.emptySet();
-
 	private Access m_access;
 	
-	public DefaultDepositHandler(DOManager mgmt, Set<String> collectionIds) throws ServerException {
-		m_mgmt = mgmt;
-		m_collectionIds = collectionIds;
-		m_rels = new HashSet<String>(1);
-		m_rels.add(Constants.RELS_EXT.IS_MEMBER_OF.uri);
-	}
-	
-	public DefaultDepositHandler(DOManager mgmt, Set<String> collectionIds, Set<String> membershipRels) throws ServerException {
-		m_mgmt = mgmt;
-		m_collectionIds = collectionIds;
-		m_rels = membershipRels;
-		m_rels.add(Constants.RELS_EXT.IS_MEMBER_OF.uri);
-	}
+//	public DefaultDepositHandler(DOManager mgmt, Set<String> collectionIds) throws ServerException {
+//		m_mgmt = mgmt;
+//		m_collectionIds = collectionIds;
+//		m_rels = new HashSet<String>(1);
+//		m_rels.add(Constants.RELS_EXT.IS_MEMBER_OF.uri);
+//	}
+//	
+//	public DefaultDepositHandler(DOManager mgmt, Set<String> collectionIds, Set<String> membershipRels) throws ServerException {
+//		m_mgmt = mgmt;
+//		m_collectionIds = collectionIds;
+//		m_rels = membershipRels;
+//		m_rels.add(Constants.RELS_EXT.IS_MEMBER_OF.uri);
+//	}
 	
 	
 	public void setPIDNamespace(String namespace) {
@@ -101,28 +96,37 @@ public class DefaultDepositHandler implements DepositHandler {
     	return m_packaging;
     }
 
-	public Entry ingestDeposit(DepositRequest deposit,
-			org.fcrepo.server.Context context) throws SWORDException {
+	public Entry ingestDeposit(DepositRequest deposit, org.fcrepo.server.Context context, DOManager m_mgmt) throws SWORDException {
+		
 		Entry result;
+		
 		if (!deposit.isNoOp()) {
+			
 			try {
+				
 				String pid = m_mgmt.getNextPID(1, m_namespace)[0];
+				
 				while (m_mgmt.objectExists(pid)) {
 					pid = m_mgmt.getNextPID(1, m_namespace)[0];
 				}
+				
 				String collection = deposit.getCollection();
 				String ownerId = "fedoraAdmin;" + deposit.getOnBehalfOf();
 				InputStream in = new TemplateInputStream(pid, DEFAULT_LABEL, ownerId);
+				
 				DOWriter writer = m_mgmt.getIngestWriter(false, context, in, Constants.FOXML1_1.uri, "UTF-8", pid);
+				
 				writer.addRelationship("info:fedora/" + pid, Constants.RELS_EXT.IS_MEMBER_OF.uri, "info:fedora/" + collection, false, null);
 				DigitalObject dObj = writer.getObject();
 				
 				Set<RelationshipTuple> rels = dObj.getRelationships(SwordConstants.SWORD.SLUG, null);
+				
 				if (rels.size() > 0) {
 					for (RelationshipTuple rel: rels) {
 						writer.purgeRelationship(rel.subject, rel.predicate, rel.object, rel.isLiteral, rel.datatype.toString());
 					}
 				}
+				
 				writer.getContentModels();
 				String subject = PID.toURI(dObj.getPid());
 
@@ -142,6 +146,7 @@ public class DefaultDepositHandler implements DepositHandler {
                 			false,
                 			null);
                 }
+                
                 // and add whatever membership-indicating rels for the collection
                 for (String memberOf: m_rels) {
                 	writer.addRelationship(
@@ -151,13 +156,16 @@ public class DefaultDepositHandler implements DepositHandler {
                 			false,
                 			null);
                 }
-				DatastreamManagedContent ds = new DatastreamManagedContent();
-				ds.putContentStream(
+				
+                DatastreamManagedContent ds = new DatastreamManagedContent();
+				
+                ds.putContentStream(
 						new MIMETypedStream(
 								deposit.getContentType(),
 								deposit.getFile(),
 								new Property[0],
 								deposit.getContentLength()));
+                
 				ds.DatastreamID = DepositHandler.DEPOSIT_DSID;
 				ds.DSChecksum = deposit.getMD5();
 				if (ds.DSChecksum != null) ds.DSChecksumType = "MD5";
@@ -165,33 +173,41 @@ public class DefaultDepositHandler implements DepositHandler {
 				ds.DSLabel = deposit.getFileName();
 				ds.DSMIME = deposit.getContentType();
 				ds.DSCreateDT = new Date();
+				
 				writer.addDatastream(ds, true);
 				writer.commit(DEFAULT_LABEL);
+				
 				DCFields dcf = Utils.getDCFields(writer);
 				result = new Entry(pid);
 				result.treatment = DEFAULT_LABEL;
 				result.setDCFields(dcf);
 				result.setPackaging(m_packaging);
 				UriInfo baseUri = deposit.getBaseUri();
+				
 				URI contentUri =
 						baseUri.getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
 						.build(pid);
+				
 				URI descUri = 
 						baseUri.getBaseUriBuilder().path(SWORDResource.class, "getDepositEntry")
 						.build(collection, pid);
+				
 				URI mediaUri =
 						baseUri.getBaseUriBuilder().path(DatastreamResource.class, "getDatastream")
 						.build(pid, DepositHandler.DEPOSIT_DSID);
+				
 				result.addEditLink(descUri.toString());
 				result.addEditMediaLink(mediaUri.toString());
 				result.setContent(contentUri.toString(), "text/html");
+				
 			} catch (ServerException e) {
 				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 			}
 		} else {
-			result = new Entry("noOp");
 			
+			result = new Entry("noOp");
 		}
+		
 		// do some stuff with link
 		return result;
 	}
@@ -229,7 +245,8 @@ public class DefaultDepositHandler implements DepositHandler {
 
 	@Override
 	public Entry getEntry(DepositRequest deposit,
-			org.fcrepo.server.Context context) throws SWORDException {
+			org.fcrepo.server.Context context,
+			DOManager m_mgmt) throws SWORDException {
 		try {
 			String collectionId = deposit.getCollection();
 			String depositId = deposit.getDepositId();

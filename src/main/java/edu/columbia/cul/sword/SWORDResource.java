@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.stereotype.Component;
 
+import edu.columbia.cul.sword.fileHandlers.DepositHandler;
+import edu.columbia.cul.sword.fileHandlers.FileHandlerManager;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
@@ -66,34 +68,30 @@ import edu.columbia.cul.sword.xml.service.ServiceDocument;
 @Path("/")
 @Component
 public class SWORDResource extends BaseRestResource {
-    private static final Logger log = LoggerFactory.getLogger(SWORDResource.class.getName());
+	
+    private static final Logger LOGGER = LoggerFactory.getLogger(SWORDResource.class.getName());
     
     public static final String ATOM_CONTENT_TYPE = "application/atom+xml; charset=UTF-8";
     public static final String ATOMSVC_CONTENT_TYPE = "application/atomsvc+xml; charset=UTF-8";
     public static final String UTC_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     public static final String DEFAULT_REALM_HEADER = "Basic realm=\"Fedora Repository Server\"";
 
-
-    private static AtomicInteger counter = new AtomicInteger(0);
-    
+    private static AtomicInteger counter = new AtomicInteger(0); 
     private static ReadOnlyContext READ_ONLY_CONTEXT = readOnlyContext();
 
     @javax.ws.rs.core.Context
     protected ServletContext m_context;
 
     private int m_maxUpload;
-
     private File m_tempDir;
-
-    private FedoraService m_sword;
-        
-    private RepositoryInfo m_repoInfo;
-    
-    private String m_realm;
-    
-    Set<String> m_collectionPids = null;
+    private FedoraService fedoraService;        
+    private RepositoryInfo repositoryInfo;    
+    private String m_realm;   
+    private Set<String> m_collectionPids = null;
+    private FileHandlerManager fileHandlerManager;
     
     private static final ReadOnlyContext readOnlyContext() {
+    	
     	try {
             ReadOnlyContext roc = ReadOnlyContext.getContext("internal", "", null, false);
             MultiValueMap env = roc.getEnvironmentAttributes();
@@ -108,7 +106,7 @@ public class SWORDResource extends BaseRestResource {
             roc.setEnvironmentValues(newEnv);
             return roc;
     	} catch (Exception e) {
-    		log.warn(e.getMessage(), e);
+    		LOGGER.warn(e.getMessage(), e);
     		return ReadOnlyContext.EMPTY;
     	}
     }
@@ -116,28 +114,28 @@ public class SWORDResource extends BaseRestResource {
     public SWORDResource(Server server) throws JAXBException, BeansException, ServerException {
     	super(server);
         
-    	m_sword = new FedoraService(
+    	fedoraService = new FedoraService(
         		server.getBean(Authorization.class),
         		server.getBean(DOManager.class),
         		server.getBean(ResourceIndex.class));
     	
-        m_repoInfo = ((Access)server.getBean(Access.class.getName())).describeRepository(READ_ONLY_CONTEXT);
+        repositoryInfo = ((Access)server.getBean(Access.class.getName())).describeRepository(READ_ONLY_CONTEXT);
    
-        log.debug("RepositoryInfo.repositoryName:          {}", m_repoInfo.repositoryName);
-        log.debug("RepositoryInfo.repositoryBaseURL:       {}", m_repoInfo.repositoryBaseURL);
-        log.debug("RepositoryInfo.repositoryVersion:       {}", m_repoInfo.repositoryVersion);
-        log.debug("RepositoryInfo.repositoryPIDNamespace:  {}", m_repoInfo.repositoryPIDNamespace);
-        log.debug("RepositoryInfo.defaultExportFormat:     {}", m_repoInfo.defaultExportFormat);
-        log.debug("RepositoryInfo.OAINamespace:            {}", m_repoInfo.OAINamespace);
-        log.debug("RepositoryInfo.adminEmailList:          {}", Arrays.asList(m_repoInfo.adminEmailList));
-        log.debug("RepositoryInfo.samplePID:               {}", m_repoInfo.samplePID);
-        log.debug("RepositoryInfo.sampleOAIIdentifer:      {}", m_repoInfo.sampleOAIIdentifer);
-        log.debug("RepositoryInfo.sampleSearchURL:         {}", m_repoInfo.sampleSearchURL);
-        log.debug("RepositoryInfo.sampleAccessURL:         {}", m_repoInfo.sampleAccessURL);
-        log.debug("RepositoryInfo.sampleOAIURL:            {}", m_repoInfo.sampleOAIURL);
-        log.debug("RepositoryInfo.retainPIDs:              {}", Arrays.asList(m_repoInfo.retainPIDs));
+        LOGGER.debug("RepositoryInfo.repositoryName:          {}", repositoryInfo.repositoryName);
+        LOGGER.debug("RepositoryInfo.repositoryBaseURL:       {}", repositoryInfo.repositoryBaseURL);
+        LOGGER.debug("RepositoryInfo.repositoryVersion:       {}", repositoryInfo.repositoryVersion);
+        LOGGER.debug("RepositoryInfo.repositoryPIDNamespace:  {}", repositoryInfo.repositoryPIDNamespace);
+        LOGGER.debug("RepositoryInfo.defaultExportFormat:     {}", repositoryInfo.defaultExportFormat);
+        LOGGER.debug("RepositoryInfo.OAINamespace:            {}", repositoryInfo.OAINamespace);
+        LOGGER.debug("RepositoryInfo.adminEmailList:          {}", Arrays.asList(repositoryInfo.adminEmailList));
+        LOGGER.debug("RepositoryInfo.samplePID:               {}", repositoryInfo.samplePID);
+        LOGGER.debug("RepositoryInfo.sampleOAIIdentifer:      {}", repositoryInfo.sampleOAIIdentifer);
+        LOGGER.debug("RepositoryInfo.sampleSearchURL:         {}", repositoryInfo.sampleSearchURL);
+        LOGGER.debug("RepositoryInfo.sampleAccessURL:         {}", repositoryInfo.sampleAccessURL);
+        LOGGER.debug("RepositoryInfo.sampleOAIURL:            {}", repositoryInfo.sampleOAIURL);
+        LOGGER.debug("RepositoryInfo.retainPIDs:              {}", Arrays.asList(repositoryInfo.retainPIDs));
         
-        init();
+        //init();
     }
     
     public void setServletContext(ServletContext context) {
@@ -147,27 +145,28 @@ public class SWORDResource extends BaseRestResource {
     	}
     	
     	if(m_context == null){
-    		log.error("ServletContext not provided +3+");
+    		LOGGER.error("ServletContext not provided");
     	}
     	
-    	log.debug("started setServletContext +3+");
-    	
-    	
+    	LOGGER.debug("started setServletContext");
+
     	String tempDirectory = m_context.getInitParameter(
     			"upload-temp-directory");
+    	
     	if ((tempDirectory == null) || (tempDirectory.equals(""))) {
     		tempDirectory = System.getProperty("java.io.tmpdir");
     	}
     	
-    	if (!tempDirectory.endsWith(System.getProperty("file.separator")))
-    	{
+    	if (!tempDirectory.endsWith(System.getProperty("file.separator"))){
     		tempDirectory += System.getProperty("file.separator");
     	}
+    	
     	m_tempDir = new File(tempDirectory);
-    	log.info("Upload temporary directory set to: " + m_tempDir.getPath());
+    	LOGGER.info("Upload temporary directory set to: {}", m_tempDir.getPath());
+    	
     	if (!m_tempDir.exists()) {
     		if (!m_tempDir.mkdirs()) {
-        		log.error("Upload directory did not exist and I can't create it. {}", m_tempDir.getPath());
+        		LOGGER.error("Upload directory did not exist and I can't create it. {}", m_tempDir.getPath());
     			throw new IllegalArgumentException(
     					"Upload directory did not exist and I can't create it. "
     							+ m_tempDir.getPath());
@@ -175,29 +174,32 @@ public class SWORDResource extends BaseRestResource {
     	}
     	
     	if (!m_tempDir.isDirectory()) {
-    		log.error("Upload temporary directory is not a directory: {}", m_tempDir.getPath());
+    		LOGGER.error("Upload temporary directory is not a directory: {}", m_tempDir.getPath());
     		throw new IllegalArgumentException(
     				"Upload temporary directory is not a directory: " + m_tempDir.getPath());
     	}
+    	
     	if (!m_tempDir.canWrite()) {
-    		log.error("Upload temporary directory cannot be written to: {}", m_tempDir.getPath());
+    		LOGGER.error("Upload temporary directory cannot be written to: {}", m_tempDir.getPath());
     		throw new IllegalArgumentException(
     				"Upload temporary directory cannot be written to: "
     						+ m_tempDir.getPath());
     	}
+    	
         String maxUploadSizeStr = m_context.getInitParameter("maxUploadSize");
+        
         if ((maxUploadSizeStr == null) ||
                 (maxUploadSizeStr.equals("")) ||
                 (maxUploadSizeStr.equals("-1"))) {
             m_maxUpload = -1;
-            log.warn("++ No maxUploadSize set, so setting max file upload size to unlimited.");
+            LOGGER.warn("No maxUploadSize set, so setting max file upload size to unlimited.");
         } else {
             try {
                 m_maxUpload = Integer.parseInt(maxUploadSizeStr);
-                log.info("Setting max file upload size to " + m_maxUpload);
+                LOGGER.info("Setting max file upload size to " + m_maxUpload);
             } catch (NumberFormatException nfe) {
                 m_maxUpload = -1;
-                log.warn("maxUploadSize not a number, so setting max file upload size to unlimited.");
+                LOGGER.warn("maxUploadSize not a number, so setting max file upload size to unlimited.");
             }
         }
 
@@ -209,48 +211,36 @@ public class SWORDResource extends BaseRestResource {
     }
     
     public void setMembershipPredicate(String predicate) {
-    	m_sword.setMembershipRel(predicate);
+    	fedoraService.setMembershipRel(predicate);
     }
     
     public void setDepositHandlers(Map<String, DepositHandler> handlers) {
-    	m_sword.setDepositHandlers(handlers);
+    	fedoraService.setDepositHandlers(handlers);
     }
-    
-    public void setCollectionPids(Collection<String> collectionPids) {
-    	m_collectionPids = new HashSet<String>(collectionPids);
-		m_sword.setCollections(m_collectionPids);
 
-		int count = 0;
-		log.info("collectionIds size: " + m_collectionPids.size());
-		for (String collection : m_collectionPids) {
-			log.info("collection-{} {}", ++count, collection);
-		}
-
-	}
-    
     private String getAuthenticationMethod() {
         String authn = m_context.getInitParameter("authentication-method");
         if ((authn == null) || (authn.equals(""))) {
         	authn = "None";
         }
         
-        log.info("Authentication type set to:{}", authn);
+        LOGGER.info("Authentication type set to:{}", authn);
         return authn;
     }
 
-    public void init() throws InitializationException {
-        
-        if (m_collectionPids == null) {
-        	setCollectionPids(new HashSet<String>(0));
-        }
-
-    	m_sword.init();
-
-    }
+//    public void init() throws InitializationException {
+//        
+//        if (m_collectionPids == null) {
+//        	setCollectionPids(new HashSet<String>(0));
+//        }
+//
+//    	fedoraService.init();
+//
+//    }
 
     // testing convenience method
     public void setSword(FedoraService sword) {
-        m_sword = sword;
+        fedoraService = sword;
     }
 
     public void setRealm(String realm) {
@@ -284,7 +274,7 @@ public class SWORDResource extends BaseRestResource {
     			authzContext = getContext();
     		}
 
-    		ServiceDocument atomsvc = m_sword.getDefaultServiceDocument(authzContext);
+    		ServiceDocument atomsvc = fedoraService.getDefaultServiceDocument(authzContext);
     		Response response = Response.status(200)
     				.entity(atomsvc)
     				.header("Content-Type", "application/atom+xml; charset=UTF-8")
@@ -330,7 +320,7 @@ public class SWORDResource extends BaseRestResource {
     		authzContext = getContext();
     	}
     	
-    	ServiceDocument atomsvc = m_sword.getServiceDocument(collection, authzContext);
+    	ServiceDocument atomsvc = fedoraService.getServiceDocument(collection, authzContext);
     	Response response = Response.status(200)
     			.entity(atomsvc)
     			.header("Content-Type", "application/atom+xml; charset=UTF-8")
@@ -383,7 +373,7 @@ public class SWORDResource extends BaseRestResource {
         	}
 
             // Generate the response
-            Feed dr = m_sword.getEntryFeed(collection, null, authzContext);
+            Feed dr = fedoraService.getEntryFeed(collection, null, authzContext);
 
             // Print out the Deposit Response
 
@@ -435,7 +425,7 @@ public class SWORDResource extends BaseRestResource {
             deposit = new DepositRequest(m_servletRequest);
             deposit.setCollection(collection);
             deposit.setBaseUri(uriInfo);
-            deposit.setGenerator(m_repoInfo); 
+            deposit.setGenerator(repositoryInfo); 
             
         } catch (SWORDException e) {
         	
@@ -444,6 +434,7 @@ public class SWORDResource extends BaseRestResource {
                     e.getMessage(),
                     m_servletRequest);
         }
+        
         if ("reject".equals(deposit.getOnBehalfOf())){
         	
             return errorResponse(SWORDException.OWNER_UNKNOWN.error,
@@ -454,7 +445,7 @@ public class SWORDResource extends BaseRestResource {
     	    	
         Date date = new Date();
         
-        log.debug("Starting deposit processing at {} by {}", date.toString(), deposit.getIPAddress());
+        LOGGER.debug("Starting deposit processing at {} by {}", date.toString(), deposit.getIPAddress());
         
         if (!deposit.authenticated() && authenticateWithBasic()) {
             return authnRequiredResponse(m_realm);
@@ -462,7 +453,7 @@ public class SWORDResource extends BaseRestResource {
         
         File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
         
-        log.debug("Temp file: {}", tempFile.getAbsolutePath());
+        LOGGER.debug("Temp file: {}", tempFile.getAbsolutePath());
 
         InputStream in = null;
         OutputStream out = null;
@@ -514,7 +505,7 @@ public class SWORDResource extends BaseRestResource {
             if ((m_maxUpload != -1) && (fLen > m_maxUpload)) {
             	
             	String errMsg = "Maximum upload size (" + m_maxUpload + ") exceeded by input (" + fLen + ")";
-            	log.error(errMsg);
+            	LOGGER.error(errMsg);
                 
             	return errorResponse(SWORDException.MAX_UPLOAD_SIZE_EXCEEDED.error,
                         HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
@@ -524,12 +515,12 @@ public class SWORDResource extends BaseRestResource {
             
             String actualMD5 = ChecksumUtils.generateMD5(tempFile.getPath());
             
-            log.debug("Received checksum header {}", deposit.getMD5());
-            log.debug("Calculated file checksum {}", actualMD5);
+            LOGGER.debug("Received checksum header {}", deposit.getMD5());
+            LOGGER.debug("Calculated file checksum {}", actualMD5);
             
             if (!actualMD5.equals(deposit.getMD5())){
             	String errMsg = "Received upload MD5 (" + deposit.getMD5() + ") did not match actual (" + actualMD5 + ")";
-            	log.error(errMsg);
+            	LOGGER.error(errMsg);
             	
                 return errorResponse(SWORDException.ERROR_CHECKSUM.error,
                         HttpServletResponse.SC_PRECONDITION_FAILED,
@@ -539,7 +530,7 @@ public class SWORDResource extends BaseRestResource {
             
             deposit.setFile(tempFile);
             String location = null;
-            Entry entry = m_sword.createEntry(deposit, authzContext);
+            Entry entry = fedoraService.createEntry(deposit, authzContext);
 
             for (Link link: entry.getLinks()){
             	if (link.isDescription()) location = link.getHref().toString();
@@ -577,7 +568,7 @@ public class SWORDResource extends BaseRestResource {
         	deposit.setDepositId(depositId);
         	deposit.setBaseUri(m_uriInfo);
 
-        	deposit.setGenerator(m_repoInfo);
+        	deposit.setGenerator(repositoryInfo);
         	Context authzContext;
         	if (deposit.isProxied()){
         		Context context = getContext();
@@ -592,7 +583,7 @@ public class SWORDResource extends BaseRestResource {
         	}
 
             String location = null;
-            Entry entry = m_sword.getEntry(deposit, authzContext);
+            Entry entry = fedoraService.getEntry(deposit, authzContext);
             for (Link link: entry.getLinks()){
             	if (link.isDescription()) location = link.getHref().toString();
             }
@@ -645,5 +636,24 @@ public class SWORDResource extends BaseRestResource {
                                     .entity(sed).build();
         return response;
     }
+    
+    public void setCollectionPids(Collection<String> collectionPids) {
+    	m_collectionPids = new HashSet<String>(collectionPids);
+		fedoraService.setCollections(m_collectionPids);
 
-}
+		int count = 0;
+		LOGGER.info("collectionIds size: " + m_collectionPids.size());
+		for (String collection : m_collectionPids) {
+			LOGGER.info("collection-{} {}", ++count, collection);
+		}
+
+	}
+
+	public void setFileHandlerManager(FileHandlerManager fileHandlerManager) {
+		this.fileHandlerManager = fileHandlerManager;
+		LOGGER.debug("FileHandlerManager was set - " + (fileHandlerManager != null));
+		
+		fedoraService.setFileHandlerManager(fileHandlerManager);
+	}
+
+} // ============================================== //

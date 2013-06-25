@@ -1,7 +1,9 @@
-package edu.columbia.cul.sword;
+package edu.columbia.cul.sword.fileHandlers;
 
 import org.fcrepo.server.Context;
+import org.fcrepo.server.storage.DOManager;
 
+import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 
@@ -37,7 +39,7 @@ public interface DepositHandler {
      * @return
      * @throws SWORDException
      */
-    public Entry ingestDeposit(DepositRequest deposit, Context context) throws SWORDException;
+    public Entry ingestDeposit(DepositRequest deposit, Context context, DOManager m_mgmt) throws SWORDException;
     
     /**
      * Get a SWORD ATOM Entry describing an existing item
@@ -46,6 +48,6 @@ public interface DepositHandler {
      * @return
      * @throws SWORDException
      */
-    public Entry getEntry(DepositRequest deposit, Context context) throws SWORDException;
+    public Entry getEntry(DepositRequest deposit, Context context, DOManager m_mgmt) throws SWORDException;
 
 }
