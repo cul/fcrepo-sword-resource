@@ -26,17 +26,17 @@
   <import resource="classpath:META-INF/cxf/cxf.xml"/>
   <import resource="classpath:META-INF/cxf/cxf-servlet.xml" />
   
-  <jaxrs:server serviceName="swordService" address="/">
-    <jaxrs:serviceBeans>
-    
-      <bean id="FileHandlerManager" class="edu.columbia.cul.sword.fileHandlers.FileHandlerManager">
+    <bean id="FileHandlerManager" class="edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl">
         <constructor-arg>
           <util:list>
             <value>edu.columbia.cul.sword.fileHandlers.impl.DSpaceZipHandler</value>
             <value>edu.columbia.cul.sword.fileHandlers.impl.DefaultDepositHandler</value>
           </util:list>
         </constructor-arg>
-      </bean>
+    </bean>
+  
+  <jaxrs:server serviceName="swordService" address="/">
+    <jaxrs:serviceBeans>
     
       <bean class="edu.columbia.cul.sword.SWORDResource">
         <constructor-arg ref="org.fcrepo.server.Server" />

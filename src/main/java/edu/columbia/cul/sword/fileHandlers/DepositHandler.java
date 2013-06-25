@@ -1,5 +1,7 @@
 package edu.columbia.cul.sword.fileHandlers;
 
+import java.util.Set;
+
 import org.fcrepo.server.Context;
 import org.fcrepo.server.storage.DOManager;
 
@@ -49,5 +51,8 @@ public interface DepositHandler {
      * @throws SWORDException
      */
     public Entry getEntry(DepositRequest deposit, Context context, DOManager m_mgmt) throws SWORDException;
+    
+    
+    public void setRels(Set<String> rels);
 
 }

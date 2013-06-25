@@ -13,7 +13,7 @@ import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
-
+// this one is not used - can be removed?
 public interface SWORDServer {
 
     /**

@@ -51,7 +51,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.stereotype.Component;
 
 import edu.columbia.cul.sword.fileHandlers.DepositHandler;
-import edu.columbia.cul.sword.fileHandlers.FileHandlerManager;
+import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
@@ -88,7 +88,7 @@ public class SWORDResource extends BaseRestResource {
     private RepositoryInfo repositoryInfo;    
     private String m_realm;   
     private Set<String> m_collectionPids = null;
-    private FileHandlerManager fileHandlerManager;
+    private FileHandlerManagerImpl fileHandlerManagerImpl;
     
     private static final ReadOnlyContext readOnlyContext() {
     	
@@ -214,9 +214,9 @@ public class SWORDResource extends BaseRestResource {
     	fedoraService.setMembershipRel(predicate);
     }
     
-    public void setDepositHandlers(Map<String, DepositHandler> handlers) {
-    	fedoraService.setDepositHandlers(handlers);
-    }
+//    public void setDepositHandlers(Map<String, DepositHandler> handlers) {
+//    	fedoraService.setDepositHandlers(handlers);
+//    }
 
     private String getAuthenticationMethod() {
         String authn = m_context.getInitParameter("authentication-method");
@@ -252,6 +252,7 @@ public class SWORDResource extends BaseRestResource {
     @Produces("text/xml")
     public Response getDefaultServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext) {
 
+    	LOGGER.debug("Started getDefaultServiceDocument");
     	setServletContext(servletContext);
 
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
@@ -298,6 +299,7 @@ public class SWORDResource extends BaseRestResource {
     		@javax.ws.rs.core.Context ServletContext servletContext
     		) {
     	
+    	LOGGER.debug("Started getServiceDocument");
     	setServletContext(servletContext);
 
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
@@ -343,6 +345,8 @@ public class SWORDResource extends BaseRestResource {
     @POST
     @Path("/service.atomsvc")
     public Response postService() {
+    	LOGGER.debug("Started postService");
+    	
         return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
                 .entity("POST OPERATION NOT IMPLEMENTED").build();
     }
@@ -356,6 +360,7 @@ public class SWORDResource extends BaseRestResource {
     		@javax.ws.rs.core.Context ServletContext servletContext
     		) {
     	
+    	LOGGER.debug("Started getFeed");
     	setServletContext(servletContext);
 
         AtomEntryRequest adr = new AtomEntryRequest(m_servletRequest);
@@ -416,6 +421,7 @@ public class SWORDResource extends BaseRestResource {
     		@javax.ws.rs.core.Context ServletContext servletContext,
     		@javax.ws.rs.core.Context UriInfo uriInfo) {
 
+    	LOGGER.debug("Started getDeposit");
         setServletContext(servletContext);
 
         DepositRequest deposit = null;
@@ -559,6 +565,8 @@ public class SWORDResource extends BaseRestResource {
     		@PathParam("deposit") String depositId,
     		@javax.ws.rs.core.Context ServletContext servletContext) {
     	
+    	LOGGER.debug("Started getDepositEntry");
+    	
     	setServletContext(servletContext);
 
     	DepositRequest deposit = null;
@@ -649,11 +657,11 @@ public class SWORDResource extends BaseRestResource {
 
 	}
 
-	public void setFileHandlerManager(FileHandlerManager fileHandlerManager) {
-		this.fileHandlerManager = fileHandlerManager;
-		LOGGER.debug("FileHandlerManager was set - " + (fileHandlerManager != null));
+	public void setFileHandlerManager(FileHandlerManagerImpl fileHandlerManagerImpl) {
+		this.fileHandlerManagerImpl = fileHandlerManagerImpl;
+		LOGGER.debug("FileHandlerManagerImpl was set - " + (fileHandlerManagerImpl != null));
 		
-		fedoraService.setFileHandlerManager(fileHandlerManager);
+		fedoraService.setFileHandlerManager(fileHandlerManagerImpl);
 	}
 
 } // ============================================== //

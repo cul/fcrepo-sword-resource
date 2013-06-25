@@ -296,7 +296,11 @@ public class DefaultDepositHandler implements DepositHandler {
 		} catch (ServerException e) {
 			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 		}
-		}
+	}
 
-		
-}
+	public void setRels(Set<String> rels){
+		this.m_rels = rels;
+	}
+	
+	
+} // ================================================ //
