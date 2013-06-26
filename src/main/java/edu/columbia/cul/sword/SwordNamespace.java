@@ -24,7 +24,7 @@ public class SwordNamespace extends RDFNamespace {
         uri = "http://purl.org/sword/";
         prefix = "sword";
         
-        CONTENT_TYPE = new RDFName(this, "contentType");
+        CONTENT_TYPE = new RDFName(this, "m_contentType");
         
         MEDIATION = new RDFName(this, "mediation");
         

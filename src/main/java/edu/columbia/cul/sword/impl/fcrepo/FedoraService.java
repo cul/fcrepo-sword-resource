@@ -138,10 +138,10 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		return collection;
 	}
 	
-//	private DepositHandler getHandler(String contentType, String packaging) throws ServerException {
+//	private DepositHandler getHandler(String m_contentType, String packaging) throws ServerException {
 //        
 //		for (DepositHandler handler: m_handlers.values()) {
-//        	if (handler.handles(contentType, packaging)) {
+//        	if (handler.handles(m_contentType, packaging)) {
 //        		return handler;
 //        	}
 //        }
@@ -184,6 +184,9 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		String collection = deposit.getCollection();
         //TODO this requires ingest/create authZ for a new resource
         String location = deposit.getLocation();
+        
+        System.out.println("========== location2: " + location);
+        
         if (location.endsWith("/")){ // trim ending slash
             location = location.substring(0, location.length() - 1);
         }

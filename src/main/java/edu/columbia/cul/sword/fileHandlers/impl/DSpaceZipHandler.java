@@ -30,7 +30,7 @@ public class DSpaceZipHandler extends DefaultDepositHandler implements DepositHa
 	
 	@Override
 	public boolean handles(String contentType, String packaging) {
-		return m_contentType.equals(contentType) && m_packaging.equals(packaging);
+		return contentType.equals(contentType) && m_packaging.equals(packaging);
 	}
 
 	@Override

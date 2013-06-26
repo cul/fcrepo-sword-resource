@@ -15,8 +15,8 @@ public interface DepositHandler {
     public static String DEPOSIT_DSID = "content";
 
     /**
-     * Report on whether this handler can handle the given contentType and packaging
-     * @param contentType
+     * Report on whether this handler can handle the given m_contentType and packaging
+     * @param m_contentType
      * @param packaging
      * @return
      */

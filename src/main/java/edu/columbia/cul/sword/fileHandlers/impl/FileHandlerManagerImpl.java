@@ -62,7 +62,7 @@ public class FileHandlerManagerImpl implements FileHandlerManager {
 		if(handlers.containsKey(handlerKey)){
 			return handlers.get(handlerKey);
 		}else{
-			return handlers.get(new HandlerKey(null, null));
+			return handlers.get(new HandlerKey("text/html", null));
 		}
 
 	}	

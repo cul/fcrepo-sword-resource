@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,11 +37,12 @@ import org.fcrepo.server.MultiValueMap;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.Server;
 import org.fcrepo.server.access.Access;
+import org.fcrepo.server.access.FedoraAccessServlet;
 import org.fcrepo.server.access.RepositoryInfo;
-import org.fcrepo.server.errors.InitializationException;
 import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.rest.BaseRestResource;
+import org.fcrepo.server.rest.FedoraObjectsResource;
 import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
 import org.slf4j.Logger;
@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.stereotype.Component;
 
-import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
 import edu.columbia.cul.sword.impl.DepositRequest;
@@ -539,8 +538,13 @@ public class SWORDResource extends BaseRestResource {
             Entry entry = fedoraService.createEntry(deposit, authzContext);
 
             for (Link link: entry.getLinks()){
+            	
+            	System.out.println("========== link.getHref(): " + link.getHref());
+            	
             	if (link.isDescription()) location = link.getHref().toString();
             }
+            
+            System.out.println("========== location: " + location);
 
             ResponseBuilder responseBuilder  = Response.status(HttpStatus.SC_CREATED);
             if (location != null) { responseBuilder.header(HttpHeaders.LOCATION, location); }

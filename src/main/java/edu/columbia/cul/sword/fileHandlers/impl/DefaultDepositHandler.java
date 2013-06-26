@@ -1,20 +1,15 @@
 package edu.columbia.cul.sword.fileHandlers.impl;
 
-import static org.fcrepo.common.Constants.MODEL;
-
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Set;
 
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
 import org.fcrepo.common.Constants;
 import org.fcrepo.common.PID;
-import org.fcrepo.common.rdf.SimpleURIReference;
 import org.fcrepo.server.ReadOnlyContext;
 import org.fcrepo.server.access.Access;
 import org.fcrepo.server.access.RepositoryInfo;
@@ -30,7 +25,6 @@ import org.fcrepo.server.storage.types.MIMETypedStream;
 import org.fcrepo.server.storage.types.Property;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
-import org.jrdf.graph.PredicateNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +35,7 @@ import edu.columbia.cul.sword.SwordConstants;
 import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.TemplateInputStream;
+import edu.columbia.cul.sword.utils.SwordUrlUtils;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.service.Collection;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;
@@ -52,7 +47,7 @@ public class DefaultDepositHandler implements DepositHandler {
 	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";	
 //	protected String m_contentType = "";	
 //	protected String m_packaging = null;	
-	protected String m_contentType;	
+	protected String m_contentType = "text/html";	
 	protected String m_packaging;	
 	protected String m_namespace = "sword"; //default	
 	//private DOManager m_mgmt;		
@@ -111,7 +106,8 @@ public class DefaultDepositHandler implements DepositHandler {
 				}
 				
 				String collection = deposit.getCollection();
-				String ownerId = "fedoraAdmin;" + deposit.getOnBehalfOf();
+				String ownerId = "fedoraAdmin;" + (deposit.getOnBehalfOf() != null ? " " + deposit.getOnBehalfOf() : "");
+				
 				InputStream in = new TemplateInputStream(pid, DEFAULT_LABEL, ownerId);
 				
 				DOWriter writer = m_mgmt.getIngestWriter(false, context, in, Constants.FOXML1_1.uri, "UTF-8", pid);
@@ -173,7 +169,7 @@ public class DefaultDepositHandler implements DepositHandler {
 				ds.DSLabel = deposit.getFileName();
 				ds.DSMIME = deposit.getContentType();
 				ds.DSCreateDT = new Date();
-				
+
 				writer.addDatastream(ds, true);
 				writer.commit(DEFAULT_LABEL);
 				
@@ -184,27 +180,29 @@ public class DefaultDepositHandler implements DepositHandler {
 				result.setPackaging(m_packaging);
 				UriInfo baseUri = deposit.getBaseUri();
 				
-				URI contentUri =
-						baseUri.getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
-						.build(pid);
+//				URI contentUri =
+//						baseUri.getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
+//						.build(pid);
+//				
+//				URI descUri = 
+//						baseUri.getBaseUriBuilder().path(SWORDResource.class, "getDepositEntry")
+//						.build(collection, pid);
 				
-				URI descUri = 
-						baseUri.getBaseUriBuilder().path(SWORDResource.class, "getDepositEntry")
-						.build(collection, pid);
+//				URI mediaUri =
+//						baseUri.getBaseUriBuilder().path(DatastreamResource.class, "getDatastream")
+//						.build(pid, DepositHandler.DEPOSIT_DSID);
 				
-				URI mediaUri =
-						baseUri.getBaseUriBuilder().path(DatastreamResource.class, "getDatastream")
-						.build(pid, DepositHandler.DEPOSIT_DSID);
-				
+				String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), collection, pid);
+				String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), collection, pid);
+			
 				result.addEditLink(descUri.toString());
-				result.addEditMediaLink(mediaUri.toString());
-				result.setContent(contentUri.toString(), "text/html");
+				//result.addEditMediaLink(mediaUri.toString());
+				result.setContent(contentUri.toString(), m_contentType);
 				
 			} catch (ServerException e) {
 				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 			}
 		} else {
-			
 			result = new Entry("noOp");
 		}
 		

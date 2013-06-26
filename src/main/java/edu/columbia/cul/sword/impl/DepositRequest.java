@@ -22,7 +22,6 @@ public class DepositRequest extends SWORDRequest {
 	
 	private static final Logger log = LoggerFactory.getLogger(DepositRequest.class.getName());
 
-    public static Pattern FILENAME = Pattern.compile(".*filename=(.*?)((; *.*)|( +)){0,1}");
     private String m_depositId;
     private String m_collectionId;
     private String m_contentType;
@@ -41,6 +40,7 @@ public class DepositRequest extends SWORDRequest {
     	super(request);
         
         m_contentDisposition = request.getHeader(HttpHeaders.CONTENT_DISPOSITION.toString());
+        m_fileName = (m_contentDisposition == null ? null : m_contentDisposition.replace("filename=", ""));
         m_md5 = request.getHeader(org.purl.sword.base.HttpHeaders.CONTENT_MD5.toString());
         m_contentType = request.getContentType();
         String len = request.getHeader(HttpHeaders.CONTENT_LENGTH);
@@ -118,12 +118,6 @@ public class DepositRequest extends SWORDRequest {
 
     public void setContentDisposition(String contentDisposition) {
         m_contentDisposition = contentDisposition;
-        if (contentDisposition != null) {
-            Matcher m = FILENAME.matcher(contentDisposition);
-            if (m.matches() && m.groupCount() > 2) {
-                m_fileName = m.group(1);
-            }
-        }
     }
 
     public String getContentDisposition() {
