@@ -524,7 +524,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
             return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
                     .entity(e.toString()).build();
         } finally {
-        	if(tempFile != null){
+        	if(tempFile != null && tempFile.exists()){
         		tempFile.delete();
         	}
         }
