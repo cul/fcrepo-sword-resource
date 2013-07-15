@@ -17,7 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.columbia.cul.sword.DepositHandler;
-import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
 import edu.columbia.cul.sword.impl.fcrepo.FedoraService;

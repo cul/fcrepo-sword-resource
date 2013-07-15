@@ -53,8 +53,8 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.support.GenericApplicationContext;
 
 import edu.columbia.cul.sword.DepositHandler;
-import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;

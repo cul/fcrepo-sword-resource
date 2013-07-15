@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword;
+package edu.columbia.cul.sword.exceptions;
 
 import java.net.URI;
 

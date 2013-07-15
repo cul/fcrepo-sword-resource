@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword;
+package edu.columbia.cul.sword.exceptions;
 
 import java.net.URI;
 
@@ -83,4 +83,11 @@ public class SWORDException extends Exception {
 		this.reason = reason.error;
 		this.status = reason.status;
 	}
-}
+	
+	public SWORDException(URI reason, int status, String message) {
+		this.reason = reason;
+		this.status = status;
+		this.message = message;
+	}
+	
+} // ================================================= //

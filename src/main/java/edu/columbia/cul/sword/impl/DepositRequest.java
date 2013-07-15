@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.columbia.cul.sword.HttpHeaders;
-import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.SWORDRequest;
 import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 
 
 public class DepositRequest extends SWORDRequest {

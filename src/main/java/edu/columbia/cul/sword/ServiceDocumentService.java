@@ -2,6 +2,7 @@ package edu.columbia.cul.sword;
 
 import org.fcrepo.server.Context;
 
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 public interface ServiceDocumentService {

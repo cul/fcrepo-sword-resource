@@ -46,7 +46,7 @@ import java.security.NoSuchAlgorithmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 
 /**
  * Utility class that holds Checksum related methods. 

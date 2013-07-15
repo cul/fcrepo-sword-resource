@@ -4,6 +4,7 @@ import java.util.Date;
 
 import org.fcrepo.server.Context;
 
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Feed;

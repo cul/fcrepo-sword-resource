@@ -9,8 +9,8 @@ import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
 
-import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.SwordConstants;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 
 public abstract class FedoraUtils {
 

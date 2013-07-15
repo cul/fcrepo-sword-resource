@@ -19,9 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.columbia.cul.sword.EntryService;
-import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.ServiceDocumentService;
 import edu.columbia.cul.sword.SwordConstants;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.fileHandlers.FileHandlerManager;
 import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;

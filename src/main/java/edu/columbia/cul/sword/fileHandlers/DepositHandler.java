@@ -5,7 +5,7 @@ import java.util.Set;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.storage.DOManager;
 
-import edu.columbia.cul.sword.SWORDException;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 

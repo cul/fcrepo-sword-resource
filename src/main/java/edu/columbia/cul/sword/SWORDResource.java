@@ -50,12 +50,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.stereotype.Component;
 
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
 import edu.columbia.cul.sword.impl.fcrepo.FedoraService;
 import edu.columbia.cul.sword.utils.ChecksumUtils;
+import edu.columbia.cul.sword.utils.ServiceHelper;
 import edu.columbia.cul.sword.xml.SwordError;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Feed;
@@ -66,18 +68,13 @@ import edu.columbia.cul.sword.xml.service.ServiceDocument;
 
 @Path("/")
 @Component
-public class SWORDResource extends BaseRestResource {
+public class SWORDResource extends BaseRestResource implements SwordConstants {
 	
     private static final Logger LOGGER = LoggerFactory.getLogger(SWORDResource.class.getName());
-    
-    public static final String ATOM_CONTENT_TYPE = "application/atom+xml; charset=UTF-8";
-    public static final String ATOMSVC_CONTENT_TYPE = "application/atomsvc+xml; charset=UTF-8";
-    public static final String UTC_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    public static final String DEFAULT_REALM_HEADER = "Basic realm=\"Fedora Repository Server\"";
 
     private static AtomicInteger counter = new AtomicInteger(0); 
     private static ReadOnlyContext READ_ONLY_CONTEXT = readOnlyContext();
-
+    
     @javax.ws.rs.core.Context
     protected ServletContext m_context;
 
@@ -149,8 +146,7 @@ public class SWORDResource extends BaseRestResource {
     	
     	LOGGER.debug("started setServletContext");
 
-    	String tempDirectory = m_context.getInitParameter(
-    			"upload-temp-directory");
+    	String tempDirectory = m_context.getInitParameter("upload-temp-directory");
     	
     	if ((tempDirectory == null) || (tempDirectory.equals(""))) {
     		tempDirectory = System.getProperty("java.io.tmpdir");
@@ -247,6 +243,13 @@ public class SWORDResource extends BaseRestResource {
     }
     
     @GET
+    @Path("/servicedocument")
+    @Produces("text/xml")
+    public Response getServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext) {
+    	return getDefaultServiceDocument(servletContext);
+    }
+    
+    @GET
     @Path("/service.atomsvc")
     @Produces("text/xml")
     public Response getDefaultServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext) {
@@ -289,16 +292,27 @@ public class SWORDResource extends BaseRestResource {
     		return response;
     	}
     }
-
+    
     @GET
-    @Path("/{collection}/service.atomsvc")
+    @Path("/{collection}/servicedocument")
     @Produces("text/xml")
     public Response getServiceDocument(
     		@PathParam("collection") String collection,
     		@javax.ws.rs.core.Context ServletContext servletContext
     		) {
     	
-    	LOGGER.debug("Started getServiceDocument");
+    	return getDefaultServiceDocument(collection, servletContext);
+    }
+
+    @GET
+    @Path("/{collection}/service.atomsvc")
+    @Produces("text/xml")
+    public Response getDefaultServiceDocument(
+    		@PathParam("collection") String collection,
+    		@javax.ws.rs.core.Context ServletContext servletContext
+    		) {
+    	
+    	LOGGER.debug("Started getDefaultServiceDocument for collection");
     	setServletContext(servletContext);
 
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
@@ -434,18 +448,18 @@ public class SWORDResource extends BaseRestResource {
             
         } catch (SWORDException e) {
         	
-            return errorResponse(e.reason,
-                    HttpServletResponse.SC_BAD_REQUEST,
-                    e.getMessage(),
-                    m_servletRequest);
+            return ServiceHelper.errorResponse(e.reason,
+							                    HttpServletResponse.SC_BAD_REQUEST,
+							                    e.getMessage(),
+							                    m_servletRequest);
         }
         
         if ("reject".equals(deposit.getOnBehalfOf())){
         	
-            return errorResponse(SWORDException.OWNER_UNKNOWN.error,
-                    HttpServletResponse.SC_FORBIDDEN,
-                    "unknown use \"reject\"",
-                    m_servletRequest);
+            return ServiceHelper.errorResponse(SWORDException.OWNER_UNKNOWN.error,
+							                    HttpServletResponse.SC_FORBIDDEN,
+							                    "unknown use \"reject\"",
+							                    m_servletRequest);
         }
     	    	
         Date date = new Date();
@@ -456,12 +470,9 @@ public class SWORDResource extends BaseRestResource {
             return authnRequiredResponse(m_realm);
         }
         
-        File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
+        //File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
         
-        LOGGER.debug("Temp file: {}", tempFile.getAbsolutePath());
-
-        InputStream in = null;
-        OutputStream out = null;
+ 
         
         try {
 
@@ -477,81 +488,34 @@ public class SWORDResource extends BaseRestResource {
         	} else {
         		authzContext = getContext();
         	}
-
-            try {
-                out = new FileOutputStream(tempFile);
-                in = m_servletRequest.getInputStream();
-                byte[] buf = new byte[1024];
-                int len;
-                while ((len = in.read(buf)) > -1){
-                    out.write(buf, 0, len);
-                }
-            } catch (IOException e) {
-            	
-                return errorResponse(SWORDException.IO_ERROR.error,
-                        HttpServletResponse.SC_SERVICE_UNAVAILABLE,
-                        e.getMessage(),
-                        m_servletRequest);
-                
-            } finally {
-            	try {
-            		if (out != null) {
-            			out.flush();
-            			out.close();
-            		}
-            		if (in != null ) in.close();
-            	} catch (IOException e) {
-            		e.printStackTrace();
-            	}
-            }
-            
-            long fLen = tempFile.length();
-
-            if ((m_maxUpload != -1) && (fLen > m_maxUpload)) {
-            	
-            	String errMsg = "Maximum upload size (" + m_maxUpload + ") exceeded by input (" + fLen + ")";
-            	LOGGER.error(errMsg);
-                
-            	return errorResponse(SWORDException.MAX_UPLOAD_SIZE_EXCEEDED.error,
-                        HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
-                        errMsg,
-                        m_servletRequest);
-            }
+ 
+            File tempFile = ServiceHelper.receiveFile(m_tempDir, 
+								                      deposit, 
+								                      m_servletRequest, 
+								                      counter, 
+								                      m_maxUpload);
+        	
+            LOGGER.debug("Temp file: {}", tempFile.getAbsolutePath());
             
             String actualMD5 = ChecksumUtils.generateMD5(tempFile.getPath());
             
             LOGGER.debug("Received checksum header {}", deposit.getMD5());
             LOGGER.debug("Calculated file checksum {}", actualMD5);
             
-            if (!actualMD5.equals(deposit.getMD5())){
-            	String errMsg = "Received upload MD5 (" + deposit.getMD5() + ") did not match actual (" + actualMD5 + ")";
-            	LOGGER.error(errMsg);
-            	
-                return errorResponse(SWORDException.ERROR_CHECKSUM.error,
-                        HttpServletResponse.SC_PRECONDITION_FAILED,
-                        errMsg,
-                        m_servletRequest);
-            }
+//            if (!actualMD5.equals(deposit.getMD5())){
+//            	String errMsg = "Received upload MD5 (" + deposit.getMD5() + ") did not match actual (" + actualMD5 + ")";
+//            	LOGGER.error(errMsg);
+//            	
+//                return errorResponse(SWORDException.ERROR_CHECKSUM.error,
+//                        HttpServletResponse.SC_PRECONDITION_FAILED,
+//                        errMsg,
+//                        m_servletRequest);
+//            }
             
             deposit.setFile(tempFile);
-            String location = null;
-            Entry entry = fedoraService.createEntry(deposit, authzContext);
 
-            for (Link link: entry.getLinks()){
-            	
-            	System.out.println("========== link.getHref(): " + link.getHref());
-            	
-            	if (link.isDescription()) location = link.getHref().toString();
-            }
-            
-            System.out.println("========== location: " + location);
-
-            ResponseBuilder responseBuilder  = Response.status(HttpStatus.SC_CREATED);
-            if (location != null) { responseBuilder.header(HttpHeaders.LOCATION, location); }
-            responseBuilder.header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE);
-            responseBuilder.entity(entry);
-            
-            return responseBuilder.build();
+            Entry resultsEntry = fedoraService.createEntry(deposit, authzContext);
+            return ServiceHelper.makeResutResponce(resultsEntry);
             
         } catch (SWORDException e) {
         	System.err.println(e.toString());
@@ -606,10 +570,10 @@ public class SWORDResource extends BaseRestResource {
                     .entity(entry).build();
             return response;
         } catch (SWORDException e) {
-            return errorResponse(e.reason,
-                    e.status,
-                    e.getMessage(),
-                    m_servletRequest);
+            return ServiceHelper.errorResponse(e.reason,
+							                   e.status,
+							                   e.getMessage(),
+							                   m_servletRequest);
         }
     }    
 
@@ -631,23 +595,25 @@ public class SWORDResource extends BaseRestResource {
     }
 
 
-    public static Response errorResponse(URI errorURI, int status, String summary, HttpServletRequest request) {
-        SwordError sed = new SwordError();
-        sed.reason = errorURI;
-        sed.title = "ERROR";
-        Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat zulu = new SimpleDateFormat(UTC_DATE_FORMAT);
-        String serializedDate = zulu.format(calendar.getTime());
-        sed.updated = serializedDate;
-        sed.summary = summary;
-        if (request.getHeader(HttpHeaders.USER_AGENT) != null) {
-            sed.setUserAgent(request.getHeader(HttpHeaders.USER_AGENT));
-        }
-        Response response = Response.status(status)
-                                    .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
-                                    .entity(sed).build();
-        return response;
-    }
+//    public static Response errorResponse(URI errorURI, int status, String summary, HttpServletRequest request) {
+//       
+//    	SwordError sed = new SwordError();
+//        sed.reason = errorURI;
+//        sed.title = "ERROR";
+//        Calendar calendar = Calendar.getInstance();
+//        SimpleDateFormat zulu = new SimpleDateFormat(UTC_DATE_FORMAT);
+//        String serializedDate = zulu.format(calendar.getTime());
+//        sed.updated = serializedDate;
+//        sed.summary = summary;
+//        if (request.getHeader(HttpHeaders.USER_AGENT) != null) {
+//            sed.setUserAgent(request.getHeader(HttpHeaders.USER_AGENT));
+//        }
+//        
+//        Response response = Response.status(status)
+//                                    .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
+//                                    .entity(sed).build();
+//        return response;
+//    }
     
     public void setCollectionPids(Collection<String> collectionPids) {
     	m_collectionPids = new HashSet<String>(collectionPids);

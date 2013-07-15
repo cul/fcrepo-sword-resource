@@ -29,8 +29,8 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import edu.columbia.cul.fcrepo.Utils;
 import edu.columbia.cul.sword.DepositHandler;
-import edu.columbia.cul.sword.SWORDException;
 import edu.columbia.cul.sword.SWORDResource;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.utils.TestUtils;
 
