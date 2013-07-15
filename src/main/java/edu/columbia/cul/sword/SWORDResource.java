@@ -473,6 +473,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         //File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
         
  
+        File tempFile = null;
         
         try {
 
@@ -489,7 +490,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         		authzContext = getContext();
         	}
  
-            File tempFile = ServiceHelper.receiveFile(m_tempDir, 
+            tempFile = ServiceHelper.receiveFile(m_tempDir, 
 								                      deposit, 
 								                      m_servletRequest, 
 								                      counter, 
@@ -522,7 +523,12 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         	e.printStackTrace();
             return Response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
                     .entity(e.toString()).build();
+        } finally {
+        	if(tempFile != null){
+        		tempFile.delete();
+        	}
         }
+        
     }
     
     @GET
