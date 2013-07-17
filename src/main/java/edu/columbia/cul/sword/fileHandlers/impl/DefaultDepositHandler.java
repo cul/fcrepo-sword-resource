@@ -115,13 +115,6 @@ public class DefaultDepositHandler implements DepositHandler {
 				
 				DOWriter writer = m_mgmt.getIngestWriter(false, context, in, Constants.FOXML1_1.uri, "UTF-8", pid);
 				
-				//writer.addRelationship("info:fedora/" + pid, Constants.RELS_EXT.IS_MEMBER_OF.uri, "info:fedora/" + collection, false, null);
-				
-				
-				
-				
-				//writer.addRelationship("info:fedora/" + pid, SwordRdfRelations.CONTENT_TYPE.getUri(), "info:fedora/" + collection, false, null);
-				//writer.addRelationship("info:fedora/" + pid, SwordRdfRelations.CONTENT_TYPE.getUri(), "application/zip", false, null);
 				
 				System.out.println("======= XXX 1 === " + SwordRdfRelations.CONTENT_TYPE.getUri());
 				System.out.println("======= XXX 2 === " + SwordConstants.SWORD.CONTENT_TYPE.uri);
@@ -191,24 +184,9 @@ public class DefaultDepositHandler implements DepositHandler {
 				
 				DCFields dcf = Utils.getDCFields(writer);
 				deposit.setDepositId(pid);
-				resultEntry = ServiceHelper.makeEntry(deposit, dcf, m_contentType, m_packaging);
-				//resultEntry = ServiceHelper.makeEntry(deposit, Utils.getDCFields(writer));
+				//resultEntry = ServiceHelper.makeEntry(deposit, dcf, m_contentType, m_packaging);
+				resultEntry = ServiceHelper.makeEntry(deposit, m_mgmt, context);
 
-
-				
-//				resultEntry = new Entry(deposit.getDepositId());
-//				resultEntry.treatment = DEFAULT_LABEL;
-//				resultEntry.setDCFields(dcf);
-//				resultEntry.setPackaging(m_packaging);
-//				UriInfo baseUri = deposit.getBaseUri();
-//				
-//				String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-//				String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-//
-//				resultEntry.addEditLink(descUri.toString());
-//				//result.addEditMediaLink(mediaUri.toString());
-//				resultEntry.setContent(contentUri.toString(), m_contentType);
-//				return resultEntry;
 				
 			} catch (ServerException e) {
 				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
@@ -221,21 +199,6 @@ public class DefaultDepositHandler implements DepositHandler {
 		return resultEntry;
 	}
 
-//	private Entry makeEntry(DepositRequest deposit, DCFields dcf, String contentType, String packaging) {
-//		Entry resultEntry = new Entry(deposit.getDepositId());
-//		resultEntry.treatment = DEFAULT_LABEL;
-//		resultEntry.setDCFields(dcf);
-//		resultEntry.setPackaging(packaging);
-//		UriInfo baseUri = deposit.getBaseUri();
-//		
-//		String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-//		String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-//
-//		resultEntry.addEditLink(descUri.toString());
-//		//result.addEditMediaLink(mediaUri.toString());
-//		resultEntry.setContent(contentUri.toString(), contentType);
-//		return resultEntry;
-//	}
 	
 	/** 
 	 * This method is the general method that converts the service document and deposit into a SWORD entry. This is the overall method

@@ -15,25 +15,24 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
-import org.fcrepo.server.errors.ServerException;
 import org.fcrepo.server.storage.DOManager;
 import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
+import org.slf4j.Logger;
 
 import edu.columbia.cul.fcrepo.Utils;
 import edu.columbia.cul.sword.SwordConstants;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.SwordError;
-import edu.columbia.cul.sword.xml.entry.Content;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Link;
 
@@ -131,31 +130,7 @@ public class ServiceHelper implements SwordConstants {
             
 		return tempFile;
 	}
-	
-//	public static Entry makeEntry(String pid){
-//	
-//		Entry entry = new Entry(pid);
-//		
-////		DCFields dcf = Utils.getDCFields(writer);
-////		
-////		entry.treatment = DEFAULT_LABEL;
-////		entry.setDCFields(dcf);
-////		entry.setPackaging(m_packaging);
-////		UriInfo baseUri = deposit.getBaseUri();
-////		
-////
-////		
-////		String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), collection, pid);
-////		String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), collection, pid);
-////	
-////		entry.addEditLink(descUri.toString());
-////		//result.addEditMediaLink(mediaUri.toString());
-////		entry.setContent(new Content(contentUri.toString(), m_contentType));
-//		
-//		return entry;
-//	}
-	
-	
+
 	public static Entry makeEntry(DepositRequest deposit, DCFields dcf, String contentType, String packaging) {
 		
 		Entry resultEntry = new Entry(deposit.getDepositId());
@@ -174,86 +149,29 @@ public class ServiceHelper implements SwordConstants {
 	}
 
 	
-	public static Entry makeEntry(DepositRequest deposit, DCFields dcf, DOManager doManager) throws SWORDException {
+	public static String getRelationship(Set<RelationshipTuple> relationships){
+
+        for (RelationshipTuple rel: relationships) {
+        	return rel.object;
+        }
 		
-		System.out.println("=============== getEntry in default deposit handler - " + deposit.getDepositId());
+		return null;
+	}
+	
+	public static Entry makeEntry(DepositRequest deposit, DOManager doManager, org.fcrepo.server.Context context) throws SWORDException {
 
 		try {
 
-//			if (!doManager.objectExists(deposit.getDepositId())) {
-//				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-//			}
-//			
-//			DOReader reader = doManager.getReader(false, context, deposit.getDepositId());
-//			
-//	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.PACKAGING, null)) {
-//        	//packaging = rel.object;
-//        	System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
-//            }
+			if (!doManager.objectExists(deposit.getDepositId())) {
+				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+			}
+	
+			DOReader reader = doManager.getReader(false, context, deposit.getDepositId());
 			
-//			
-//			DOReader reader = m_mgmt.getReader(false, context, depositId);
-//			
-//			Set<RelationshipTuple> rels = reader.getRelationships();
-			
-//			boolean collectionFound = false;
-//			String collectionUri = "info:fedora/" + collectionId;
-//			
-//			for (RelationshipTuple rel: rels) {
-//				if (m_rels.contains(rel.predicate)) {
-//					collectionFound = (collectionFound || rel.object.equals(collectionUri));
-//				}
-//			}
-//			
-//			if (!collectionFound) {
-//				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-//			}
-			
-//			Entry entry = new Entry(depositId);
-//
-//			entry.setUpdated(reader.getLastModDate());
-//			entry.setPublished(reader.getCreateDate());
-//
-//			entry.setDCFields(Utils.getDCFields(reader));
-//			entry.setId(reader.GetObjectPID());
-//			entry.treatment = DEFAULT_LABEL;
-//			
-//			UriInfo baseUri = deposit.getBaseUri();
-//			String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), collectionId, depositId);
-//			String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), collectionId, depositId);
-//		
-//			entry.addEditLink(descUri.toString());
-//			//result.addEditMediaLink(mediaUri.toString());
-//			//entry.setContent(contentUri.toString(), m_contentType);
-//
-//			String packaging = Utils.getSwordPackaging(reader);
-//			if (packaging != null) {
-//				entry.setPackaging(packaging);
-//			}
-//
-//			return entry;
-			
-			
-			
-			
-			
+			String packaging = getRelationship(reader.getRelationships(SwordConstants.SWORD.PACKAGING, null));
+			String contentType = getRelationship(reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null));
 
-			Entry entry = new Entry(deposit.getDepositId());
-			entry.treatment = DEFAULT_LABEL;
-			entry.setDCFields(dcf);
-			entry.setPackaging("http://purl.org/net/sword-types/mets/dspace");
-			UriInfo baseUri = deposit.getBaseUri();
-			
-			String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-			String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-		
-			entry.addEditLink(descUri.toString());
-			//result.addEditMediaLink(mediaUri.toString());
-			entry.setContent(contentUri.toString(), "http://purl.org/net/sword-types/mets/dspace");
-			
-			
-			
-			return entry;
+			return makeEntry(deposit, Utils.getDCFields(reader), contentType, packaging);
 			
 		} catch (Exception e) {
 			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
@@ -262,21 +180,21 @@ public class ServiceHelper implements SwordConstants {
 	}	
 	
 
-	public static Context getContext(DepositRequest deposit, HttpServletRequest servletRequest) throws SWORDException {
+	public static Context getContext(DepositRequest deposit, HttpServletRequest servletRequest, Logger logger) throws SWORDException {
 		Context authzContext = null;
 		if (deposit.isProxied()){
 		    // do some authZ to see if this user is allowed to proxy
 		    try {
 				authzContext = ReadOnlyContext.getContext(servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
-				System.out.println("=============== authzContext = ReadOnlyContext... ;");
+				logger.debug("authzContext is proxied");
 			} catch (Exception e) {
 				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 			}
 		} else {
-			
-			System.out.println("=============== authzContext = getContext();");
 			authzContext = ReadOnlyContext.getContext(Constants.HTTP_REQUEST.REST.uri, servletRequest);
+			logger.debug("authzContext is not proxied");
 		}
+		
 		return authzContext;
 	}	
 	

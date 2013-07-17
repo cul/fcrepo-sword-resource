@@ -499,7 +499,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
             
             deposit.setFile(tempFile);
 
-            Entry resultsEntry = fedoraService.createEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest));
+            Entry resultsEntry = fedoraService.createEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest, LOGGER));
             return ServiceHelper.makeResutResponce(resultsEntry);
             
         } catch (SWORDException e) {
@@ -539,7 +539,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
 
             System.out.println("=============== get entry start: " + (fedoraService == null));
             
-            Entry entry = fedoraService.getEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest));
+            Entry entry = fedoraService.getEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest, LOGGER));
             return ServiceHelper.makeResutResponce(entry);
 
         } catch (SWORDException e) {

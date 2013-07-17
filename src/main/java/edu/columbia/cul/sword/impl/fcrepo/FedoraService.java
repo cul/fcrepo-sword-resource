@@ -151,15 +151,8 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 			}
 
-			DOReader reader = doManager.getReader(false, context, deposit.getDepositId());
-			
-			String packaging = null;
-	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.PACKAGING, null)) {
-        	packaging = rel.object;
-        	System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
-        }
 
-			return ServiceHelper.makeEntry(deposit, Utils.getDCFields(reader), "xxx", packaging);
+			return ServiceHelper.makeEntry(deposit, doManager, context);
 			
 		} catch (ServerException e) {
 			e.printStackTrace();
