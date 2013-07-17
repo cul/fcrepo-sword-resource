@@ -8,34 +8,48 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
+import org.fcrepo.server.errors.ServerException;
+import org.fcrepo.server.storage.DOManager;
+import org.fcrepo.server.storage.DOReader;
+import org.fcrepo.server.storage.types.RelationshipTuple;
+import org.fcrepo.server.utilities.DCFields;
 
+import edu.columbia.cul.fcrepo.Utils;
 import edu.columbia.cul.sword.SwordConstants;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.SwordError;
+import edu.columbia.cul.sword.xml.entry.Content;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Link;
 
 public class ServiceHelper implements SwordConstants {
 	
-	public static Response makeResutResponce(Entry entry){
+	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";
+	
+	public static Response makeResutResponce(Entry entry) {
 
 		String location = null;
 
         for (Link link: entry.getLinks()){
         	if (link.isDescription()) location = link.getHref().toString();
         }
+        
+        System.out.println("=============== location: " + location);
 
         ResponseBuilder responseBuilder  = Response.status(HttpStatus.SC_CREATED);
         
@@ -47,12 +61,6 @@ public class ServiceHelper implements SwordConstants {
         return responseBuilder.build();
 	}
 	
-	
-//	public static Response processException(Exception e){
-//		
-//		
-//		
-//	}
 	
     public static Response errorResponse(URI errorURI, int status, String summary, HttpServletRequest request) {
         
@@ -81,8 +89,6 @@ public class ServiceHelper implements SwordConstants {
 			                       int m_maxUpload) throws SWORDException{
 		
         File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
-        
-        //LOGGER.debug("Temp file: {}", tempFile.getAbsolutePath());
 
         InputStream in = null;
         OutputStream out = null;
@@ -124,8 +130,155 @@ public class ServiceHelper implements SwordConstants {
             }
             
 		return tempFile;
-
 	}
+	
+//	public static Entry makeEntry(String pid){
+//	
+//		Entry entry = new Entry(pid);
+//		
+////		DCFields dcf = Utils.getDCFields(writer);
+////		
+////		entry.treatment = DEFAULT_LABEL;
+////		entry.setDCFields(dcf);
+////		entry.setPackaging(m_packaging);
+////		UriInfo baseUri = deposit.getBaseUri();
+////		
+////
+////		
+////		String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), collection, pid);
+////		String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), collection, pid);
+////	
+////		entry.addEditLink(descUri.toString());
+////		//result.addEditMediaLink(mediaUri.toString());
+////		entry.setContent(new Content(contentUri.toString(), m_contentType));
+//		
+//		return entry;
+//	}
+	
+	
+	public static Entry makeEntry(DepositRequest deposit, DCFields dcf, String contentType, String packaging) {
+		
+		Entry resultEntry = new Entry(deposit.getDepositId());
+		resultEntry.treatment = DEFAULT_LABEL;
+		resultEntry.setDCFields(dcf);
+		resultEntry.setPackaging(packaging);
+		UriInfo baseUri = deposit.getBaseUri();
+		
+		String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+		String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+
+		resultEntry.addEditLink(descUri.toString());
+		//result.addEditMediaLink(mediaUri.toString());
+		resultEntry.setContent(contentUri.toString(), contentType);
+		return resultEntry;
+	}
+
+	
+	public static Entry makeEntry(DepositRequest deposit, DCFields dcf, DOManager doManager) throws SWORDException {
+		
+		System.out.println("=============== getEntry in default deposit handler - " + deposit.getDepositId());
+
+		try {
+
+//			if (!doManager.objectExists(deposit.getDepositId())) {
+//				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+//			}
+//			
+//			DOReader reader = doManager.getReader(false, context, deposit.getDepositId());
+//			
+//	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.PACKAGING, null)) {
+//        	//packaging = rel.object;
+//        	System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
+//            }
+			
+//			
+//			DOReader reader = m_mgmt.getReader(false, context, depositId);
+//			
+//			Set<RelationshipTuple> rels = reader.getRelationships();
+			
+//			boolean collectionFound = false;
+//			String collectionUri = "info:fedora/" + collectionId;
+//			
+//			for (RelationshipTuple rel: rels) {
+//				if (m_rels.contains(rel.predicate)) {
+//					collectionFound = (collectionFound || rel.object.equals(collectionUri));
+//				}
+//			}
+//			
+//			if (!collectionFound) {
+//				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+//			}
+			
+//			Entry entry = new Entry(depositId);
+//
+//			entry.setUpdated(reader.getLastModDate());
+//			entry.setPublished(reader.getCreateDate());
+//
+//			entry.setDCFields(Utils.getDCFields(reader));
+//			entry.setId(reader.GetObjectPID());
+//			entry.treatment = DEFAULT_LABEL;
+//			
+//			UriInfo baseUri = deposit.getBaseUri();
+//			String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), collectionId, depositId);
+//			String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), collectionId, depositId);
+//		
+//			entry.addEditLink(descUri.toString());
+//			//result.addEditMediaLink(mediaUri.toString());
+//			//entry.setContent(contentUri.toString(), m_contentType);
+//
+//			String packaging = Utils.getSwordPackaging(reader);
+//			if (packaging != null) {
+//				entry.setPackaging(packaging);
+//			}
+//
+//			return entry;
+			
+			
+			
+			
+			
+
+			Entry entry = new Entry(deposit.getDepositId());
+			entry.treatment = DEFAULT_LABEL;
+			entry.setDCFields(dcf);
+			entry.setPackaging("http://purl.org/net/sword-types/mets/dspace");
+			UriInfo baseUri = deposit.getBaseUri();
+			
+			String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+			String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+		
+			entry.addEditLink(descUri.toString());
+			//result.addEditMediaLink(mediaUri.toString());
+			entry.setContent(contentUri.toString(), "http://purl.org/net/sword-types/mets/dspace");
+			
+			
+			
+			return entry;
+			
+		} catch (Exception e) {
+			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+		}
+		
+	}	
+	
+
+	public static Context getContext(DepositRequest deposit, HttpServletRequest servletRequest) throws SWORDException {
+		Context authzContext = null;
+		if (deposit.isProxied()){
+		    // do some authZ to see if this user is allowed to proxy
+		    try {
+				authzContext = ReadOnlyContext.getContext(servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
+				System.out.println("=============== authzContext = ReadOnlyContext... ;");
+			} catch (Exception e) {
+				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+			}
+		} else {
+			
+			System.out.println("=============== authzContext = getContext();");
+			authzContext = ReadOnlyContext.getContext(Constants.HTTP_REQUEST.REST.uri, servletRequest);
+		}
+		return authzContext;
+	}	
 	
 
 } // ================================================= //

@@ -23,8 +23,11 @@ public class SwordNamespace extends RDFNamespace {
 
         uri = "http://purl.org/sword/";
         prefix = "sword";
+		
+//        uri = "info:fedora/fedora-system:def/relations-external#";
+//        prefix = "rel";		
         
-        CONTENT_TYPE = new RDFName(this, "m_contentType");
+        CONTENT_TYPE = new RDFName(this, "contentType");
         
         MEDIATION = new RDFName(this, "mediation");
         

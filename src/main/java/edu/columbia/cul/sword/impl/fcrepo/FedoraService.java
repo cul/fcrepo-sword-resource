@@ -6,9 +6,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.fcrepo.common.Constants;
+import org.fcrepo.common.rdf.RDFName;
+import org.fcrepo.common.rdf.RDFNamespace;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.Server;
 import org.fcrepo.server.errors.ServerException;
+import org.fcrepo.server.errors.StorageDeviceException;
 import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
@@ -18,6 +21,7 @@ import org.fcrepo.server.utilities.DCFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.columbia.cul.fcrepo.Utils;
 import edu.columbia.cul.sword.EntryService;
 import edu.columbia.cul.sword.ServiceDocumentService;
 import edu.columbia.cul.sword.SwordConstants;
@@ -26,6 +30,7 @@ import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.fileHandlers.FileHandlerManager;
 import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.utils.ServiceHelper;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Feed;
 import edu.columbia.cul.sword.xml.service.Collection;
@@ -39,8 +44,7 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 	private ResourceIndex m_resourceIndex; 	
 	private DOManager doManager;	
 	private Set<String> m_rels; 	
-	private Set<String> m_collectionIds;	
-    //private Map<String, DepositHandler> m_handlers;   
+	private Set<String> m_collectionIds;	 
     private String m_workspace_title = "FCRepo SWORD Workspace";
     private FileHandlerManager fileHandlerManager;
     
@@ -138,45 +142,72 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		return collection;
 	}
 	
-//	private DepositHandler getHandler(String m_contentType, String packaging) throws ServerException {
-//        
-//		for (DepositHandler handler: m_handlers.values()) {
-//        	if (handler.handles(m_contentType, packaging)) {
-//        		return handler;
-//        	}
-//        }
-//		
-//        return new DefaultDepositHandler(doManager, m_collectionIds, m_rels);
-//	}
-	
 	public Entry getEntry(DepositRequest deposit, Context context) throws SWORDException {
-        String pid = deposit.getDepositId();
-        
-        try {
-			DOReader reader = doManager.getReader(false, context, pid);
+		
+		System.out.println("=============== getEntry start: " + deposit.getDepositId());
 
-	        String contentType = null;
-	        String packaging = null;
+		try {
+			if (!doManager.objectExists(deposit.getDepositId())) {
+				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+			}
 
-	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null)) {
-        		contentType = rel.object;
-	        }
-
+			DOReader reader = doManager.getReader(false, context, deposit.getDepositId());
+			
+			String packaging = null;
 	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.PACKAGING, null)) {
-	        	packaging = rel.object;
-	        }
+        	packaging = rel.object;
+        	System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
+        }
 
-	        try {
-	        	DepositHandler handler = fileHandlerManager.getHandler(contentType, packaging);
-		        return handler.getEntry(deposit, context, doManager);
-	        } catch (Exception e) {
-	        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-	        }
-	        
+			return ServiceHelper.makeEntry(deposit, Utils.getDCFields(reader), "xxx", packaging);
+			
 		} catch (ServerException e) {
 			e.printStackTrace();
 			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 		}
+        
+//        try {
+//			DOReader reader = doManager.getReader(false, context, pid);
+//			
+//			DCFields dcf = Utils.getDCFields(reader);
+//
+//			System.out.println("=============== reader is null: ");
+//			
+//	        String contentType = null;
+//	        String packaging = null;
+//	        
+//	        for (RelationshipTuple rel: reader.getRelationships()) {
+//
+//        		System.out.println("1 ============== Relationship: " +  rel);
+//        		System.out.println("2 ============== Relationship: " +  rel.object);
+//        		System.out.println("3 ============== Relationship: " +  rel.getRelationship());
+//	        }	     
+//	        
+//	        
+//	        //for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.XXX, null)) {
+//	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null)) {	
+//        		//contentType = rel.object;
+//        		
+//        		System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
+//	        }
+//	        
+//
+//	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.PACKAGING, null)) {
+//	        	//packaging = rel.object;
+//	        	System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
+//	        }
+//
+//	        try {
+//	        	DepositHandler handler = fileHandlerManager.getHandler(contentType, packaging);
+//		        return handler.getEntry(deposit, context, doManager);
+//	        } catch (Exception e) {
+//	        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+//	        }
+//	        
+//		} catch (ServerException e) {
+//			e.printStackTrace();
+//			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+//		}
 	}
 
 	public Entry createEntry(DepositRequest deposit, Context context)
@@ -190,9 +221,8 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
         if (location.endsWith("/")){ // trim ending slash
             location = location.substring(0, location.length() - 1);
         }
-        String onBehalfOf = deposit.getOnBehalfOf();
-        if (onBehalfOf == null) onBehalfOf = deposit.getUserName();
-        ServiceDocument serviceDoc = getServiceDocument(collection, context);
+        if (deposit.getOnBehalfOf() == null) deposit.setOnBehalfOf(deposit.getUserName());
+        
         // do some authZ with the serviceDoc (??)
         // check whether content types is allowed
         // check whether package type is allowed

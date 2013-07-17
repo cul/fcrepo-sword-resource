@@ -35,7 +35,10 @@ import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.TemplateInputStream;
+import edu.columbia.cul.sword.rdf.SwordRdfRelations;
+import edu.columbia.cul.sword.utils.ServiceHelper;
 import edu.columbia.cul.sword.utils.SwordUrlUtils;
+import edu.columbia.cul.sword.xml.entry.Content;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.service.Collection;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;
@@ -93,14 +96,14 @@ public class DefaultDepositHandler implements DepositHandler {
 
 	public Entry ingestDeposit(DepositRequest deposit, org.fcrepo.server.Context context, DOManager m_mgmt) throws SWORDException {
 		
-		Entry result;
+		Entry resultEntry;
 		
 		if (!deposit.isNoOp()) {
 			
 			try {
 				
 				String pid = m_mgmt.getNextPID(1, m_namespace)[0];
-				
+
 				while (m_mgmt.objectExists(pid)) {
 					pid = m_mgmt.getNextPID(1, m_namespace)[0];
 				}
@@ -112,7 +115,20 @@ public class DefaultDepositHandler implements DepositHandler {
 				
 				DOWriter writer = m_mgmt.getIngestWriter(false, context, in, Constants.FOXML1_1.uri, "UTF-8", pid);
 				
-				writer.addRelationship("info:fedora/" + pid, Constants.RELS_EXT.IS_MEMBER_OF.uri, "info:fedora/" + collection, false, null);
+				//writer.addRelationship("info:fedora/" + pid, Constants.RELS_EXT.IS_MEMBER_OF.uri, "info:fedora/" + collection, false, null);
+				
+				
+				
+				
+				//writer.addRelationship("info:fedora/" + pid, SwordRdfRelations.CONTENT_TYPE.getUri(), "info:fedora/" + collection, false, null);
+				//writer.addRelationship("info:fedora/" + pid, SwordRdfRelations.CONTENT_TYPE.getUri(), "application/zip", false, null);
+				
+				System.out.println("======= XXX 1 === " + SwordRdfRelations.CONTENT_TYPE.getUri());
+				System.out.println("======= XXX 2 === " + SwordConstants.SWORD.CONTENT_TYPE.uri);
+				
+				writer.addRelationship("info:fedora/" + pid, SwordConstants.SWORD.CONTENT_TYPE.uri, "contentType:" + m_contentType, false, null);
+				writer.addRelationship("info:fedora/" + pid, SwordConstants.SWORD.PACKAGING.uri, m_packaging, false, null);
+				
 				DigitalObject dObj = writer.getObject();
 				
 				Set<RelationshipTuple> rels = dObj.getRelationships(SwordConstants.SWORD.SLUG, null);
@@ -174,41 +190,52 @@ public class DefaultDepositHandler implements DepositHandler {
 				writer.commit(DEFAULT_LABEL);
 				
 				DCFields dcf = Utils.getDCFields(writer);
-				result = new Entry(pid);
-				result.treatment = DEFAULT_LABEL;
-				result.setDCFields(dcf);
-				result.setPackaging(m_packaging);
-				UriInfo baseUri = deposit.getBaseUri();
+				deposit.setDepositId(pid);
+				resultEntry = ServiceHelper.makeEntry(deposit, dcf, m_contentType, m_packaging);
+				//resultEntry = ServiceHelper.makeEntry(deposit, Utils.getDCFields(writer));
+
+
 				
-//				URI contentUri =
-//						baseUri.getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
-//						.build(pid);
+//				resultEntry = new Entry(deposit.getDepositId());
+//				resultEntry.treatment = DEFAULT_LABEL;
+//				resultEntry.setDCFields(dcf);
+//				resultEntry.setPackaging(m_packaging);
+//				UriInfo baseUri = deposit.getBaseUri();
 //				
-//				URI descUri = 
-//						baseUri.getBaseUriBuilder().path(SWORDResource.class, "getDepositEntry")
-//						.build(collection, pid);
-				
-//				URI mediaUri =
-//						baseUri.getBaseUriBuilder().path(DatastreamResource.class, "getDatastream")
-//						.build(pid, DepositHandler.DEPOSIT_DSID);
-				
-				String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), collection, pid);
-				String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), collection, pid);
-			
-				result.addEditLink(descUri.toString());
-				//result.addEditMediaLink(mediaUri.toString());
-				result.setContent(contentUri.toString(), m_contentType);
+//				String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+//				String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+//
+//				resultEntry.addEditLink(descUri.toString());
+//				//result.addEditMediaLink(mediaUri.toString());
+//				resultEntry.setContent(contentUri.toString(), m_contentType);
+//				return resultEntry;
 				
 			} catch (ServerException e) {
 				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 			}
 		} else {
-			result = new Entry("noOp");
+			resultEntry = new Entry("noOp");
 		}
 		
 		// do some stuff with link
-		return result;
+		return resultEntry;
 	}
+
+//	private Entry makeEntry(DepositRequest deposit, DCFields dcf, String contentType, String packaging) {
+//		Entry resultEntry = new Entry(deposit.getDepositId());
+//		resultEntry.treatment = DEFAULT_LABEL;
+//		resultEntry.setDCFields(dcf);
+//		resultEntry.setPackaging(packaging);
+//		UriInfo baseUri = deposit.getBaseUri();
+//		
+//		String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+//		String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
+//
+//		resultEntry.addEditLink(descUri.toString());
+//		//result.addEditMediaLink(mediaUri.toString());
+//		resultEntry.setContent(contentUri.toString(), contentType);
+//		return resultEntry;
+//	}
 	
 	/** 
 	 * This method is the general method that converts the service document and deposit into a SWORD entry. This is the overall method
@@ -245,52 +272,66 @@ public class DefaultDepositHandler implements DepositHandler {
 	public Entry getEntry(DepositRequest deposit,
 			org.fcrepo.server.Context context,
 			DOManager m_mgmt) throws SWORDException {
+		
+		System.out.println("=============== getEntry in default deposit handler");
+
 		try {
 			String collectionId = deposit.getCollection();
 			String depositId = deposit.getDepositId();
+			
+			
 			if (!m_collectionIds.contains(collectionId)) {
 				throw new SWORDException(SWORDException.ERROR_REQUEST);
 			}
 			if (!m_mgmt.objectExists(depositId)) {
 				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 			}
+			
 			DOReader reader = m_mgmt.getReader(false, context, depositId);
-			String packaging = Utils.getSwordPackaging(reader);
+			
 			Set<RelationshipTuple> rels = reader.getRelationships();
+			
 			boolean collectionFound = false;
 			String collectionUri = "info:fedora/" + collectionId;
+			
 			for (RelationshipTuple rel: rels) {
 				if (m_rels.contains(rel.predicate)) {
 					collectionFound = (collectionFound || rel.object.equals(collectionUri));
 				}
 			}
+			
 			if (!collectionFound) {
 				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 			}
-			Entry entry = new Entry();
+			
+			Entry entry = new Entry(depositId);
+
+			entry.setUpdated(reader.getLastModDate());
+			entry.setPublished(reader.getCreateDate());
+
+			entry.setDCFields(Utils.getDCFields(reader));
+			entry.setId(reader.GetObjectPID());
+			entry.treatment = DEFAULT_LABEL;
+			
+			UriInfo baseUri = deposit.getBaseUri();
+			String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), collectionId, depositId);
+			String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), collectionId, depositId);
+		
+			entry.addEditLink(descUri.toString());
+			//result.addEditMediaLink(mediaUri.toString());
+			entry.setContent(contentUri.toString(), m_contentType);
+			
+			
+			
+			
+			String packaging = Utils.getSwordPackaging(reader);
 			if (packaging != null) {
 				entry.setPackaging(packaging);
 			}
-			entry.setUpdated(reader.getLastModDate());
-			entry.setPublished(reader.getCreateDate());
-			DCFields dcf = Utils.getDCFields(reader);
-			entry.setDCFields(dcf);
-			entry.setId(reader.GetObjectPID());
-			URI contentUri =
-					deposit.getBaseUri().getBaseUriBuilder().path(FedoraObjectsResource.class, "getObjectProfile")
-					.build(depositId);
-			URI descUri = 
-					deposit.getBaseUri().getBaseUriBuilder().path(SWORDResource.class, "getDepositEntry")
-					.build(collectionId, depositId);
-			URI mediaUri =
-					deposit.getBaseUri().getBaseUriBuilder().path(DatastreamResource.class, "getDatastream")
-					.build(depositId, DepositHandler.DEPOSIT_DSID);
-			entry.addEditLink(descUri.toString());
-			entry.addEditMediaLink(mediaUri.toString());
-			entry.setContent(contentUri.toString(), "text/html");
-
-			//TODO Treatment?
+			
+			
 			return entry;
+			
 		} catch (ServerException e) {
 			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 		}

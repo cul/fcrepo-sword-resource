@@ -1,5 +1,6 @@
 *.log
 *.sh
+restart_local_tomcat.sh
 .DS_Store
 .classpath
 .project

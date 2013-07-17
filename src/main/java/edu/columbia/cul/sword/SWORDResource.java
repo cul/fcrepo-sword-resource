@@ -470,25 +470,9 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
             return authnRequiredResponse(m_realm);
         }
         
-        //File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
-        
- 
         File tempFile = null;
         
         try {
-
-        	Context authzContext;
-        	if (deposit.isProxied()){
-                Context context = getContext();
-                // do some authZ to see if this user is allowed to proxy
-                try {
-					authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
-				} catch (Exception e) {
-					throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-				}
-        	} else {
-        		authzContext = getContext();
-        	}
  
             tempFile = ServiceHelper.receiveFile(m_tempDir, 
 								                      deposit, 
@@ -515,7 +499,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
             
             deposit.setFile(tempFile);
 
-            Entry resultsEntry = fedoraService.createEntry(deposit, authzContext);
+            Entry resultsEntry = fedoraService.createEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest));
             return ServiceHelper.makeResutResponce(resultsEntry);
             
         } catch (SWORDException e) {
@@ -530,6 +514,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         }
         
     }
+
     
     @GET
     @Path("/{collection}/{deposit}")
@@ -551,30 +536,12 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         	deposit.setBaseUri(m_uriInfo);
 
         	deposit.setGenerator(repositoryInfo);
-        	Context authzContext;
-        	if (deposit.isProxied()){
-        		Context context = getContext();
-        		// do some authZ to see if this user is allowed to proxy
-        		try {
-        			authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
-        		} catch (Exception e) {
-        			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-        		}
-        	} else {
-        		authzContext = getContext();
-        	}
 
-            String location = null;
-            Entry entry = fedoraService.getEntry(deposit, authzContext);
-            for (Link link: entry.getLinks()){
-            	if (link.isDescription()) location = link.getHref().toString();
-            }
+            System.out.println("=============== get entry start: " + (fedoraService == null));
+            
+            Entry entry = fedoraService.getEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest));
+            return ServiceHelper.makeResutResponce(entry);
 
-            Response response = Response.status(HttpStatus.SC_CREATED)
-                    .header(HttpHeaders.LOCATION, location)
-                    .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
-                    .entity(entry).build();
-            return response;
         } catch (SWORDException e) {
             return ServiceHelper.errorResponse(e.reason,
 							                   e.status,
@@ -600,26 +567,6 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         return response;
     }
 
-
-//    public static Response errorResponse(URI errorURI, int status, String summary, HttpServletRequest request) {
-//       
-//    	SwordError sed = new SwordError();
-//        sed.reason = errorURI;
-//        sed.title = "ERROR";
-//        Calendar calendar = Calendar.getInstance();
-//        SimpleDateFormat zulu = new SimpleDateFormat(UTC_DATE_FORMAT);
-//        String serializedDate = zulu.format(calendar.getTime());
-//        sed.updated = serializedDate;
-//        sed.summary = summary;
-//        if (request.getHeader(HttpHeaders.USER_AGENT) != null) {
-//            sed.setUserAgent(request.getHeader(HttpHeaders.USER_AGENT));
-//        }
-//        
-//        Response response = Response.status(status)
-//                                    .header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE)
-//                                    .entity(sed).build();
-//        return response;
-//    }
     
     public void setCollectionPids(Collection<String> collectionPids) {
     	m_collectionPids = new HashSet<String>(collectionPids);
