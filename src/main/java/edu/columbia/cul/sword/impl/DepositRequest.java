@@ -4,8 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Enumeration;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -14,150 +13,211 @@ import org.slf4j.LoggerFactory;
 
 import edu.columbia.cul.sword.HttpHeaders;
 import edu.columbia.cul.sword.SWORDRequest;
-import edu.columbia.cul.sword.SWORDResource;
 import edu.columbia.cul.sword.exceptions.SWORDException;
+import edu.columbia.cul.sword.utils.SwordHttpHeaders;
 
 
 public class DepositRequest extends SWORDRequest {
 	
 	private static final Logger log = LoggerFactory.getLogger(DepositRequest.class.getName());
 
-    private String m_depositId;
-    private String m_collectionId;
-    private String m_contentType;
-    private String m_contentDisposition;
-    private String m_md5;
-    private int m_contentLength;
-    private String m_packaging;
-    private boolean m_noOp;
-    private String m_slug;
-    private boolean m_verbose;
-    private String m_fileName;
-    private InputStream m_file;
+    private String depositId;
+    private String collectionId;
+    private String contentType;
+    private String contentDisposition;
+    private String md5;
+    private int contentLength;
+    private String packaging;
+    private boolean noOp;
+    private String slug;
+    private boolean verbose;
+    private String fileName;
+    private InputStream file;
 
     public DepositRequest(HttpServletRequest request) throws SWORDException {
         
     	super(request);
         
-        m_contentDisposition = request.getHeader(HttpHeaders.CONTENT_DISPOSITION.toString());
-        m_fileName = (m_contentDisposition == null ? null : m_contentDisposition.replace("filename=", ""));
-        m_md5 = request.getHeader(org.purl.sword.base.HttpHeaders.CONTENT_MD5.toString());
-        m_contentType = request.getContentType();
+        contentDisposition = request.getHeader(HttpHeaders.CONTENT_DISPOSITION.toString());
+        
+        fileName = (contentDisposition == null ? null : contentDisposition.replace("filename=", ""));
+        md5 = request.getHeader(org.purl.sword.base.HttpHeaders.CONTENT_MD5.toString());
+        contentType = request.getContentType();
         String len = request.getHeader(HttpHeaders.CONTENT_LENGTH);
-        if (len != null && !"".equals(len)) m_contentLength = Integer.parseInt(len);
-        m_packaging = request.getHeader(org.purl.sword.base.HttpHeaders.X_PACKAGING);
-        m_noOp = booleanValue(request.getHeader(org.purl.sword.base.HttpHeaders.X_NO_OP), "noOp");
-        m_verbose = booleanValue(request.getHeader(org.purl.sword.base.HttpHeaders.X_VERBOSE), "verbose");
-        m_slug = request.getHeader(org.purl.sword.base.HttpHeaders.SLUG);
+        if (len != null && !"".equals(len)) contentLength = Integer.parseInt(len);
+        packaging = request.getHeader(org.purl.sword.base.HttpHeaders.X_PACKAGING);
+        noOp = booleanValue(request.getHeader(org.purl.sword.base.HttpHeaders.X_NO_OP), "noOp");
+        verbose = booleanValue(request.getHeader(HttpHeaders.X_VERBOSE), "verbose");
+        slug = request.getHeader(org.purl.sword.base.HttpHeaders.SLUG);
 
-        log.debug("m_contentDisposition: {}", m_contentDisposition);
-        log.debug("m_md5:                {}", m_md5);
-        log.debug("m_contentType:        {}", m_contentType);
-        log.debug("m_contentLength:      {}", m_contentLength);
-        log.debug("m_packaging:          {}", m_packaging);
-        log.debug("m_noOp:               {}", m_noOp);
-        log.debug("m_verbose:            {}", m_verbose);
-        log.debug("m_slug:               {}", m_slug);
+        
+        
+        
+        log.info("ipAddress:           {}", getIPAddress());
+        log.info("Content-Disposition: {}", getContentDisposition());
+        log.info("Content-MD5:         {}", getMD5());
+        
+        log.info("Content-Type:        {}", getContentType());
+        log.info("contentLength:       {}", getContentLength());
+
+        log.info("packaging:           {}", getPackaging());
+        log.info("isNoOp:              {}", isNoOp());
+        log.info("isVerbose:           {}", isVerbose());
+        log.info("slug:                {}", getSlug());
+        
+        log.info("isProxied:           {}", isProxied()); 
+        log.info("onBehalfOf():        {}", getOnBehalfOf());
+        log.info("location:            {}", getLocation());
+        
+        log.info("userAgent:           {}", this.getUserAgent());
+        log.info("userAgent:           {}", this.getUserAgent());
+        
+        log.info("authenticated:       {}", authenticated());
+        
+        
+        log.info("Authorization:       {}", request.getHeader("Authorization"));
+        
+        
+        System.out.println("1 ==============================================================");
+        
+        Enumeration<String>names = request.getParameterNames();
+        while(names.hasMoreElements()){
+        	String name = names.nextElement();
+        	System.out.println("======= Parameter name: " + name + " = " + request.getParameter(name));
+        }   
+
+        System.out.println("2 ==============================================================");
+        
+        names = request.getAttributeNames();
+        while(names.hasMoreElements()){
+        	String name = names.nextElement();
+        	System.out.println("======= Attribute name: " + name + " = " + request.getAttribute(name));
+        }
+        
+        System.out.println("3 ==============================================================");
+        
+        System.out.println("===++==   Header name: " + HttpHeaders.USER_AGENT + " = " + request.getHeader(HttpHeaders.USER_AGENT));
+        System.out.println("===++==   Header name: " + HttpHeaders.USER_AGENT + " = " + request.getHeader(HttpHeaders.USER_AGENT));
+        System.out.println("===+!+==   Header name: " + SwordHttpHeaders.USER_AGENT.getName() + " = " + SwordHttpHeaders.USER_AGENT.getValue(request));
+        
+        
+        
+        System.out.println("===++== Authorization: " + " = " + request.getHeader("Authorization"));
+        System.out.println("===++== WWW-Authenticate: " + " = " + request.getHeader("WWW-Authenticate"));
+        
+
+        names = request.getHeaderNames();
+        while(names.hasMoreElements()){
+        	String name = names.nextElement();
+        	System.out.println("======= Header name: " + name + " = " + request.getHeader(name));
+        	
+        }
+
+        System.out.println("4 ==============================================================");
+        
+        
+        log.info("userName:            {}", getUserName());
+        log.info("password:            {}", getPassword());
     }
     
     public void setContentType(String contentType) {
-    	m_contentType = contentType;
+    	this.contentType = contentType;
     }
 
     public String getContentType() {
-        return m_contentType;
+        return contentType;
     }
 
     public void setContentLength(int contentLength) {
-        m_contentLength = contentLength;
+    	this.contentLength = contentLength;
     }
 
     public int getContentLength(){
-        return m_contentLength;
+        return contentLength;
     }
 
     public void setCollection(String id) {
-      m_collectionId = id;
+    	this.collectionId = id;
     }
 
     public String getCollection(){
-        return m_collectionId;
+        return collectionId;
     }
     
     public void setDepositId(String id) {
-    	m_depositId = id;
+    	this.depositId = id;
     }
     
     public String getDepositId() {
-    	return m_depositId;
+    	return depositId;
     }
 
     public void setPackaging(String packaging) {
-        m_packaging = packaging;
+    	this.packaging = packaging;
     }
 
     public String getPackaging() {
-        return m_packaging;
+        return packaging;
     }
 
     public void setFile(InputStream file) {
-        m_file = file;
+    	this.file = file;
     }
 
     public void setFile(File file) throws SWORDException {
         try {
-			m_file = (new FileInputStream(file));
+        	this.file = (new FileInputStream(file));
 		} catch (FileNotFoundException e) {
 			throw new SWORDException(SWORDException.IO_ERROR, e);
 		}
     }
 
     public InputStream getFile() {
-        return m_file;
+        return file;
     }
 
     public void setContentDisposition(String contentDisposition) {
-        m_contentDisposition = contentDisposition;
+    	this.contentDisposition = contentDisposition;
     }
 
     public String getContentDisposition() {
-        return m_contentDisposition;
+        return contentDisposition;
     }
 
     public void setMD5(String md5) {
-        m_md5 = md5;
+    	this.md5 = md5;
     }
 
     public String getMD5() {
-        return m_md5;
+        return md5;
     }
 
     public void setNoOp(boolean noOp) {
-        m_noOp = noOp;
+    	this.noOp = noOp;
     }
 
     public boolean isNoOp() {
-        return m_noOp;
+        return noOp;
     }
 
     public void setSlug(String slug) {
-        m_slug = slug;
+        this.slug = slug;
     }
 
     public String getSlug() {
-        return m_slug;
+        return slug;
     }
 
     public void setVerbose(boolean verbose) {
-        m_verbose = verbose;
+    	this.verbose = verbose;
     }
 
     public boolean isVerbose() {
-        return m_verbose;
+        return verbose;
     }
 
     public String getFileName() {
-        return m_fileName;
+        return fileName;
     }
     
     private static boolean booleanValue(String input, String field) throws SWORDException {

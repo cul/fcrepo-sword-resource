@@ -82,9 +82,9 @@ public class DefaultDepositHandler implements DepositHandler {
 		m_objectCModels = objectCModels;
 	}
 
-    public boolean handles(String contentType, String packaging) {
-        return true;
-    }
+//    public boolean handles(String contentType, String packaging) {
+//        return true;
+//    }
     
     public String getContentType() {
     	return m_contentType;
@@ -116,11 +116,7 @@ public class DefaultDepositHandler implements DepositHandler {
 				DOWriter writer = m_mgmt.getIngestWriter(false, context, in, Constants.FOXML1_1.uri, "UTF-8", pid);
 				
 				
-				System.out.println("======= XXX 1 === " + SwordRdfRelations.CONTENT_TYPE.getUri());
-				System.out.println("======= XXX 2 === " + SwordConstants.SWORD.CONTENT_TYPE.uri);
-				
-				writer.addRelationship("info:fedora/" + pid, SwordConstants.SWORD.CONTENT_TYPE.uri, "contentType:" + m_contentType, false, null);
-				writer.addRelationship("info:fedora/" + pid, SwordConstants.SWORD.PACKAGING.uri, m_packaging, false, null);
+				addRelationship(pid, writer);
 				
 				DigitalObject dObj = writer.getObject();
 				
@@ -197,6 +193,20 @@ public class DefaultDepositHandler implements DepositHandler {
 		
 		// do some stuff with link
 		return resultEntry;
+	}
+
+	protected void addRelationship(String pid, DOWriter writer) throws ServerException {
+		
+		System.out.println("======= XXX 1 === " + SwordRdfRelations.CONTENT_TYPE.getUri());
+		System.out.println("======= XXX 2 === " + SwordConstants.SWORD.CONTENT_TYPE.uri);
+		
+		if(m_contentType != null) {
+			writer.addRelationship("info:fedora/" + pid, SwordConstants.SWORD.CONTENT_TYPE.uri, "contentType:" + m_contentType, false, null);
+		}
+		
+		if(m_packaging != null) {
+			writer.addRelationship("info:fedora/" + pid, SwordConstants.SWORD.PACKAGING.uri, m_packaging, false, null);
+		}
 	}
 
 	

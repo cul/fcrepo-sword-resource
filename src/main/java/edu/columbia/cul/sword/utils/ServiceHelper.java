@@ -56,8 +56,16 @@ public class ServiceHelper implements SwordConstants {
         	responseBuilder.header(HttpHeaders.LOCATION, location); }
             responseBuilder.header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE);
             responseBuilder.entity(entry);
+
         
-        return responseBuilder.build();
+        Response response =  responseBuilder.build();
+        
+
+         // System.out.println("=============== key: " + key + ", value: " +  response.getEntity()); 
+
+        
+        return response;
+        //return responseBuilder.build();
 	}
 	
 	

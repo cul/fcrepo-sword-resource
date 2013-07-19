@@ -29,6 +29,7 @@
     <bean id="FileHandlerManager" class="edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl">
         <constructor-arg>
           <util:list>
+            <value>edu.columbia.cul.sword.fileHandlers.impl.DefaultZipHandler</value>
             <value>edu.columbia.cul.sword.fileHandlers.impl.DSpaceZipHandler</value>
             <value>edu.columbia.cul.sword.fileHandlers.impl.DefaultDepositHandler</value>
           </util:list>

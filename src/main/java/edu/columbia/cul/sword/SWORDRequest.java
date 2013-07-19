@@ -14,25 +14,19 @@ import edu.columbia.cul.sword.xml.entry.Generator;
 
 
 public abstract class SWORDRequest {
-    private static final Logger log = LoggerFactory.getLogger(SWORDRequest.class.getName());
+    
+	private static final Logger LOGGER = LoggerFactory.getLogger(SWORDRequest.class.getName());
 
     protected String m_userName;
-
     protected String m_password;
-
     protected String m_ipAddress;
-
     protected String m_location;
-
     protected boolean m_authenticated;
-
-    protected String m_onBehalfOf;
-    
-    protected boolean m_proxied;
-    
-    protected UriInfo m_base;
-    
-    protected Generator m_generator;
+    protected String m_onBehalfOf;   
+    protected boolean m_proxied;   
+    protected UriInfo m_base;  
+    protected Generator m_generator;  
+    protected String userAgent;
     
     public SWORDRequest() {
     	
@@ -42,11 +36,11 @@ public abstract class SWORDRequest {
         m_authenticated = SWORDRequest.setCredentials(this, request);
         setIPAddress(request.getRemoteAddr());
         setLocation(getURL(request));
-        String onBehalfOf = request.getHeader(org.purl.sword.base.HttpHeaders.X_ON_BEHALF_OF
-                .toString());
+        String onBehalfOf = request.getHeader(HttpHeaders.X_ON_BEHALF_OF);
         if (onBehalfOf == null) onBehalfOf = getUserName();
         setOnBehalfOf(onBehalfOf);
         setProxied(m_onBehalfOf != null && !(m_onBehalfOf.equals(m_userName)));
+        userAgent = request.getHeader(HttpHeaders.USER_AGENT);
     }
 
     public String getUserName() {
@@ -117,8 +111,16 @@ public abstract class SWORDRequest {
     public Generator getGenerator() {
     	return m_generator;
     }
-    
-    /**
+
+    public String getUserAgent() {
+		return userAgent;
+	}
+
+	public void setUserAgent(String userAgent) {
+		this.userAgent = userAgent;
+	}
+
+	/**
      * Utility method to set up generator
      * @param info
      */
@@ -128,7 +130,9 @@ public abstract class SWORDRequest {
     }
 
     public static boolean setCredentials(SWORDRequest sr, HttpServletRequest request) {
-        String usernamePassword = getUsernamePassword(request);
+        
+    	String usernamePassword = getUsernamePassword(request);
+
         if ((usernamePassword != null) && (!usernamePassword.equals(""))) {
             int p = usernamePassword.indexOf(":");
             if (p != -1) {
@@ -162,7 +166,7 @@ public abstract class SWORDRequest {
                 }
             }
         } catch (Exception e) {
-            log.debug(e.toString());
+            LOGGER.debug(e.toString());
         }
         return null;
     }

@@ -65,10 +65,6 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		m_resourceIndex = resourceIndex;
 	}
 	
-//    public void setDepositHandlers(Map<String, DepositHandler> handlers) {
-//    	m_handlers = handlers;
-//    }
-    
     public void init(Server server) {
     	m_authz = server.getBean(Authorization.class.getName(), Authorization.class);
     	doManager = server.getBean(DOManager.class.getName(), DOManager.class);
@@ -92,15 +88,6 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		m_workspace_title = title;
 	}
 	
-//	// post-construct initialization
-//	public void init() {
-//		if (m_handlers == null) {
-//			m_handlers = new HashMap<String, DepositHandler>(0);
-//		}
-//		if (m_collectionIds == null) {
-//			m_collectionIds = new HashSet<String>(0);
-//		}
-//	}
 	
 	public ServiceDocument getDefaultServiceDocument(Context context) throws SWORDException {
 		ServiceDocument result = new ServiceDocument();
@@ -144,13 +131,12 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 	
 	public Entry getEntry(DepositRequest deposit, Context context) throws SWORDException {
 		
-		System.out.println("=============== getEntry start: " + deposit.getDepositId());
+		LOGGER.debug("getEntry() started");
 
 		try {
 			if (!doManager.objectExists(deposit.getDepositId())) {
 				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 			}
-
 
 			return ServiceHelper.makeEntry(deposit, doManager, context);
 			
@@ -159,48 +145,6 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 		}
         
-//        try {
-//			DOReader reader = doManager.getReader(false, context, pid);
-//			
-//			DCFields dcf = Utils.getDCFields(reader);
-//
-//			System.out.println("=============== reader is null: ");
-//			
-//	        String contentType = null;
-//	        String packaging = null;
-//	        
-//	        for (RelationshipTuple rel: reader.getRelationships()) {
-//
-//        		System.out.println("1 ============== Relationship: " +  rel);
-//        		System.out.println("2 ============== Relationship: " +  rel.object);
-//        		System.out.println("3 ============== Relationship: " +  rel.getRelationship());
-//	        }	     
-//	        
-//	        
-//	        //for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.XXX, null)) {
-//	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null)) {	
-//        		//contentType = rel.object;
-//        		
-//        		System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
-//	        }
-//	        
-//
-//	        for (RelationshipTuple rel: reader.getRelationships(SwordConstants.SWORD.PACKAGING, null)) {
-//	        	//packaging = rel.object;
-//	        	System.out.println("===== ++1 ++ ==== Relationship: " + rel.object);
-//	        }
-//
-//	        try {
-//	        	DepositHandler handler = fileHandlerManager.getHandler(contentType, packaging);
-//		        return handler.getEntry(deposit, context, doManager);
-//	        } catch (Exception e) {
-//	        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-//	        }
-//	        
-//		} catch (ServerException e) {
-//			e.printStackTrace();
-//			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-//		}
 	}
 
 	public Entry createEntry(DepositRequest deposit, Context context)
@@ -208,8 +152,6 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		String collection = deposit.getCollection();
         //TODO this requires ingest/create authZ for a new resource
         String location = deposit.getLocation();
-        
-        System.out.println("========== location2: " + location);
         
         if (location.endsWith("/")){ // trim ending slash
             location = location.substring(0, location.length() - 1);

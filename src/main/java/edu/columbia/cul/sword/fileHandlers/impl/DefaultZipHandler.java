@@ -10,16 +10,15 @@ import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 
-public class DSpaceZipHandler extends DefaultZipHandler implements DepositHandler {
+public class DefaultZipHandler extends DefaultDepositHandler implements DepositHandler {
 	
-	private static final Logger LOGGER = LoggerFactory.getLogger(DSpaceZipHandler.class.getName());
+	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultZipHandler.class.getName());
 
-	public DSpaceZipHandler() {
+	public DefaultZipHandler() {
 		m_contentType = "application/zip";
-		m_packaging = "http://purl.org/net/sword-types/mets/dspace";
+		m_packaging = null;
     }	
 	
-
 	@Override
 	public Entry ingestDeposit(DepositRequest deposit, Context context, DOManager doManager)
 			throws SWORDException {
@@ -28,7 +27,7 @@ public class DSpaceZipHandler extends DefaultZipHandler implements DepositHandle
 		
 		return super.ingestDeposit(deposit, context, doManager);
 	}
-	
+		
 	
 
 } // ========================================================= //

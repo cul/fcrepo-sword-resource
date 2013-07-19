@@ -208,10 +208,6 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     public void setMembershipPredicate(String predicate) {
     	fedoraService.setMembershipRel(predicate);
     }
-    
-//    public void setDepositHandlers(Map<String, DepositHandler> handlers) {
-//    	fedoraService.setDepositHandlers(handlers);
-//    }
 
     private String getAuthenticationMethod() {
         String authn = m_context.getInitParameter("authentication-method");
@@ -222,16 +218,6 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         LOGGER.info("Authentication type set to:{}", authn);
         return authn;
     }
-
-//    public void init() throws InitializationException {
-//        
-//        if (m_collectionPids == null) {
-//        	setCollectionPids(new HashSet<String>(0));
-//        }
-//
-//    	fedoraService.init();
-//
-//    }
 
     // testing convenience method
     public void setSword(FedoraService sword) {
@@ -316,6 +302,12 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	setServletContext(servletContext);
 
     	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
+//    	DepositRequest request = null;
+//		try {
+//			request = new DepositRequest(m_servletRequest);
+//		} catch (SWORDException e1) {
+//			e1.printStackTrace();
+//		}
 
     	if (!request.authenticated() && authenticateWithBasic()) {
             return authnRequiredResponse(m_realm);
@@ -437,14 +429,14 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	LOGGER.debug("Started getDeposit");
         setServletContext(servletContext);
 
-        DepositRequest deposit = null;
+        DepositRequest depositRequest = null;
 
         try {
         	
-            deposit = new DepositRequest(m_servletRequest);
-            deposit.setCollection(collection);
-            deposit.setBaseUri(uriInfo);
-            deposit.setGenerator(repositoryInfo); 
+            depositRequest = new DepositRequest(m_servletRequest);
+            depositRequest.setCollection(collection);
+            depositRequest.setBaseUri(uriInfo);
+            depositRequest.setGenerator(repositoryInfo); 
             
         } catch (SWORDException e) {
         	
@@ -454,7 +446,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
 							                    m_servletRequest);
         }
         
-        if ("reject".equals(deposit.getOnBehalfOf())){
+        if ("reject".equals(depositRequest.getOnBehalfOf())){
         	
             return ServiceHelper.errorResponse(SWORDException.OWNER_UNKNOWN.error,
 							                    HttpServletResponse.SC_FORBIDDEN,
@@ -464,9 +456,9 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	    	
         Date date = new Date();
         
-        LOGGER.debug("Starting deposit processing at {} by {}", date.toString(), deposit.getIPAddress());
+        LOGGER.debug("Starting deposit processing at {} by {}", date.toString(), depositRequest.getIPAddress());
         
-        if (!deposit.authenticated() && authenticateWithBasic()) {
+        if (!depositRequest.authenticated() && authenticateWithBasic()) {
             return authnRequiredResponse(m_realm);
         }
         
@@ -475,7 +467,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         try {
  
             tempFile = ServiceHelper.receiveFile(m_tempDir, 
-								                      deposit, 
+								                      depositRequest, 
 								                      m_servletRequest, 
 								                      counter, 
 								                      m_maxUpload);
@@ -484,7 +476,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
             
             String actualMD5 = ChecksumUtils.generateMD5(tempFile.getPath());
             
-            LOGGER.debug("Received checksum header {}", deposit.getMD5());
+            LOGGER.debug("Received checksum header {}", depositRequest.getMD5());
             LOGGER.debug("Calculated file checksum {}", actualMD5);
             
 //            if (!actualMD5.equals(deposit.getMD5())){
@@ -497,9 +489,9 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
 //                        m_servletRequest);
 //            }
             
-            deposit.setFile(tempFile);
+            depositRequest.setFile(tempFile);
 
-            Entry resultsEntry = fedoraService.createEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest, LOGGER));
+            Entry resultsEntry = fedoraService.createEntry(depositRequest, ServiceHelper.getContext(depositRequest, m_servletRequest, LOGGER));
             return ServiceHelper.makeResutResponce(resultsEntry);
             
         } catch (SWORDException e) {
@@ -536,8 +528,6 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         	deposit.setBaseUri(m_uriInfo);
 
         	deposit.setGenerator(repositoryInfo);
-
-            System.out.println("=============== get entry start: " + (fedoraService == null));
             
             Entry entry = fedoraService.getEntry(deposit, ServiceHelper.getContext(deposit, m_servletRequest, LOGGER));
             return ServiceHelper.makeResutResponce(entry);
