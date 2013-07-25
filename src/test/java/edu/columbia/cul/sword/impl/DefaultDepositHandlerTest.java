@@ -96,7 +96,7 @@ public class DefaultDepositHandlerTest {
 		// the manager will be asked for a pid
 		String [] mockPids = new String[] {mockPid};
 		when(mockManager.getNextPID(eq(1), anyString())).thenReturn(mockPids);
-		// DOWriter writer = m_mgmt.getIngestWriter(false, context, in, Constants.FOXML1_1.uri, "UTF-8", pid);
+		// DOWriter writer = m_mgmt.getIngestWriter(false, webContext, in, Constants.FOXML1_1.uri, "UTF-8", pid);
 		// the manager will be asked for a DOWriter
 		DOWriter mockWriter = mock(DOWriter.class);
 		when(mockManager.getIngestWriter(eq(false), eq(mockContext), any(InputStream.class), eq(Constants.FOXML1_1.uri), eq(UTF_8), eq(mockPid)))

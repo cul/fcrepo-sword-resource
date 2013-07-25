@@ -27,17 +27,22 @@ import org.fcrepo.server.storage.DOReader;
 import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.columbia.cul.fcrepo.Utils;
+import edu.columbia.cul.sword.SWORDResource;
 import edu.columbia.cul.sword.SwordConstants;
 import edu.columbia.cul.sword.exceptions.SWORDException;
+import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.SwordError;
 import edu.columbia.cul.sword.xml.entry.Entry;
+import edu.columbia.cul.sword.xml.entry.Generator;
 import edu.columbia.cul.sword.xml.entry.Link;
 
 public class ServiceHelper implements SwordConstants {
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ServiceHelper.class.getName());
 	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";
 	
 	public static Response makeResutResponce(Entry entry) {
@@ -59,13 +64,7 @@ public class ServiceHelper implements SwordConstants {
 
         
         Response response =  responseBuilder.build();
-        
-
-         // System.out.println("=============== key: " + key + ", value: " +  response.getEntity()); 
-
-        
         return response;
-        //return responseBuilder.build();
 	}
 	
 	
@@ -90,12 +89,11 @@ public class ServiceHelper implements SwordConstants {
     }	
 	
 	public static File receiveFile(File m_tempDir, 
-			                       DepositRequest deposit, 
 			                       HttpServletRequest m_servletRequest, 
 			                       AtomicInteger counter, 
 			                       int m_maxUpload) throws SWORDException{
 		
-        File tempFile = new File(m_tempDir, "SWORD-" + deposit.getIPAddress() + "_" + counter.addAndGet(1));  
+        File tempFile = new File(m_tempDir, "SWORD_" + counter.addAndGet(1));  
 
         InputStream in = null;
         OutputStream out = null;
@@ -138,24 +136,6 @@ public class ServiceHelper implements SwordConstants {
             
 		return tempFile;
 	}
-
-	public static Entry makeEntry(DepositRequest deposit, DCFields dcf, String contentType, String packaging) {
-		
-		Entry resultEntry = new Entry(deposit.getDepositId());
-		resultEntry.treatment = DEFAULT_LABEL;
-		resultEntry.setDCFields(dcf);
-		resultEntry.setPackaging(packaging);
-		UriInfo baseUri = deposit.getBaseUri();
-		
-		String descUri = SwordUrlUtils.makeDescriptionUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-		String contentUri = SwordUrlUtils.makeContentUrl(baseUri.getAbsolutePath().toString(), deposit.getCollection(), deposit.getDepositId());
-
-		resultEntry.addEditLink(descUri.toString());
-		//result.addEditMediaLink(mediaUri.toString());
-		resultEntry.setContent(contentUri.toString(), contentType);
-		return resultEntry;
-	}
-
 	
 	public static String getRelationship(Set<RelationshipTuple> relationships){
 
@@ -164,22 +144,41 @@ public class ServiceHelper implements SwordConstants {
         }
 		
 		return null;
-	}
-	
-	public static Entry makeEntry(DepositRequest deposit, DOManager doManager, org.fcrepo.server.Context context) throws SWORDException {
+	}	
 
+	public static Entry makeEntry(SwordSessionStructure swordSession, DCFields dcf, String contentType, String packaging) {
+		
+		Entry resultEntry = new Entry(swordSession.depositId);
+		resultEntry.treatment = DEFAULT_LABEL;
+		resultEntry.setDCFields(dcf);
+		resultEntry.setPackaging(packaging);
+		
+		String descUri = SwordUrlUtils.makeDescriptionUrl(swordSession);
+		String contentUri = SwordUrlUtils.makeContentUrl(swordSession);
+
+		resultEntry.addEditLink(descUri.toString());
+		//result.addEditMediaLink(mediaUri.toString());
+		resultEntry.setContent(contentUri.toString(), contentType);
+		return resultEntry;
+	}
+
+
+	public static Entry makeEntry(SwordSessionStructure swordSession) throws SWORDException {
+
+		//m_generator = new Generator(info.repositoryBaseURL, info.repositoryVersion);
+		
 		try {
 
-			if (!doManager.objectExists(deposit.getDepositId())) {
+			if (!swordSession.getDoManager().objectExists(swordSession.depositId)) {
 				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 			}
 	
-			DOReader reader = doManager.getReader(false, context, deposit.getDepositId());
+			DOReader reader = swordSession.getDoManager().getReader(false, swordSession.fedoraContext, swordSession.depositId);
 			
 			String packaging = getRelationship(reader.getRelationships(SwordConstants.SWORD.PACKAGING, null));
 			String contentType = getRelationship(reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null));
 
-			return makeEntry(deposit, Utils.getDCFields(reader), contentType, packaging);
+			return makeEntry(swordSession, Utils.getDCFields(reader), contentType, packaging);
 			
 		} catch (Exception e) {
 			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
@@ -187,13 +186,35 @@ public class ServiceHelper implements SwordConstants {
 		
 	}	
 	
+	
+//	public static Entry makeEntry(DepositRequest deposit, DOManager doManager, org.fcrepo.server.Context context) throws SWORDException {
+//
+//		try {
+//
+//			if (!doManager.objectExists(deposit.getDepositId())) {
+//				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+//			}
+//	
+//			DOReader reader = doManager.getReader(false, context, deposit.getDepositId());
+//			
+//			String packaging = getRelationship(reader.getRelationships(SwordConstants.SWORD.PACKAGING, null));
+//			String contentType = getRelationship(reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null));
+//
+//			return makeEntry(deposit, Utils.getDCFields(reader), contentType, packaging);
+//			
+//		} catch (Exception e) {
+//			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+//		}
+//		
+//	}	
+	
 
-	public static Context getContext(DepositRequest deposit, HttpServletRequest servletRequest, Logger logger) throws SWORDException {
+	public static Context getContext(boolean isProxied, String onBehalfOf, HttpServletRequest servletRequest, Logger logger) throws SWORDException {
 		Context authzContext = null;
-		if (deposit.isProxied()){
+		if (isProxied){
 		    // do some authZ to see if this user is allowed to proxy
 		    try {
-				authzContext = ReadOnlyContext.getContext(servletRequest.getProtocol(), deposit.getOnBehalfOf(), null, true);
+				authzContext = ReadOnlyContext.getContext(servletRequest.getProtocol(), onBehalfOf, null, true);
 				logger.debug("authzContext is proxied");
 			} catch (Exception e) {
 				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
@@ -206,5 +227,63 @@ public class ServiceHelper implements SwordConstants {
 		return authzContext;
 	}	
 	
+	public static String verifyTempDirectoryName(String tempDirStr) {
+		
+    	if (tempDirStr == null || tempDirStr.isEmpty()) {
+    		tempDirStr = System.getProperty("java.io.tmpdir");
+    	}
+    	
+    	if (!tempDirStr.endsWith(System.getProperty("file.separator"))){
+    		tempDirStr += System.getProperty("file.separator");
+    	}
+    	
+    	return tempDirStr;
+	}
+	
+	public static File createTempDirectory(String tempDirStr) {
+
+    	File tempDir = new File(tempDirStr);
+    	
+    	if (!tempDir.exists()) {
+    		if (!tempDir.mkdirs()) {
+    			String errMsg = "Upload directory did not exist and I can't create it. " + tempDir.getPath();
+        		LOGGER.error(errMsg);
+    			throw new IllegalArgumentException(errMsg);
+    		}
+    	}
+    	
+    	if (!tempDir.isDirectory()) {
+    		String errMsg = "Upload temporary directory is not a directory: " + tempDir.getPath();
+    		LOGGER.error(errMsg);
+    		throw new IllegalArgumentException(errMsg);
+    	}
+    	
+    	if (!tempDir.canWrite()) {
+    		String errMsg = "Upload temporary directory cannot be written to: " + tempDir.getPath();
+    		LOGGER.error(errMsg);
+    		throw new IllegalArgumentException(errMsg);
+    	}
+    	
+    	return tempDir;
+	}
+	
+	
+	public static int makeMaxUploadSize(String maxUploadSize) {
+
+		int max = -1;
+
+		if (maxUploadSize == null || maxUploadSize.isEmpty() || maxUploadSize.equals("-1")) {
+			LOGGER.warn("No maxUploadSize set, so setting max file upload size to unlimited.");
+		} else {
+			try {
+				max = Integer.parseInt(maxUploadSize);
+				LOGGER.info("Setting max file upload size to " + max);
+			} catch (NumberFormatException nfe) {
+				LOGGER.warn("maxUploadSize not a number, so setting max file upload size to unlimited.");
+			}
+		}
+
+		return max;
+	}
 
 } // ================================================= //

@@ -6,6 +6,7 @@ import org.fcrepo.server.Context;
 import org.fcrepo.server.storage.DOManager;
 
 import edu.columbia.cul.sword.exceptions.SWORDException;
+import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 
@@ -37,20 +38,22 @@ public interface DepositHandler {
     /**
      * Create a new object and return an SWORD ATOM Entry describing it
      * @param deposit
-     * @param context
+     * @param webContext
      * @return
      * @throws SWORDException
      */
-    public Entry ingestDeposit(DepositRequest deposit, Context context, DOManager m_mgmt) throws SWORDException;
+    public Entry ingestDeposit(SwordSessionStructure swordSession) throws SWORDException;
+
     
-    /**
-     * Get a SWORD ATOM Entry describing an existing item
-     * @param deposit
-     * @param context
-     * @return
-     * @throws SWORDException
-     */
-    public Entry getEntry(DepositRequest deposit, Context context, DOManager m_mgmt) throws SWORDException;
+//   do not see any reason why ATOM Entry creation should be depended on any specific ingestion
+//    /**
+//     * Get a SWORD ATOM Entry describing an existing item
+//     * @param deposit
+//     * @param webContext
+//     * @return
+//     * @throws SWORDException
+//     */
+//    public Entry getEntry(DepositRequest deposit, Context webContext, DOManager m_mgmt) throws SWORDException;
     
     
     public void setRels(Set<String> rels);

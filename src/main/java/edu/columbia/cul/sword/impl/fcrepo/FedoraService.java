@@ -29,6 +29,7 @@ import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.fileHandlers.FileHandlerManager;
 import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;
+import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.utils.ServiceHelper;
 import edu.columbia.cul.sword.xml.entry.Entry;
@@ -37,7 +38,8 @@ import edu.columbia.cul.sword.xml.service.Collection;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;
 import edu.columbia.cul.sword.xml.service.Workspace;
 
-public class FedoraService implements ServiceDocumentService, EntryService, Constants {
+//public class FedoraService implements ServiceDocumentService, EntryService, Constants {
+public class FedoraService implements ServiceDocumentService, Constants {	
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(FedoraService.class.getName());	
 	private Authorization m_authz;	
@@ -133,45 +135,68 @@ public class FedoraService implements ServiceDocumentService, EntryService, Cons
 		
 		LOGGER.debug("getEntry() started");
 
-		try {
-			if (!doManager.objectExists(deposit.getDepositId())) {
-				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-			}
-
-			return ServiceHelper.makeEntry(deposit, doManager, context);
-			
-		} catch (ServerException e) {
-			e.printStackTrace();
-			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-		}
+//		try {
+//			if (!doManager.objectExists(deposit.getDepositId())) {
+//				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+//			}
+//
+//			return ServiceHelper.makeEntry(deposit, doManager, context);
+//			
+//		} catch (ServerException e) {
+//			e.printStackTrace();
+//			throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
+//		}
+		
+		return null;
         
 	}
+	
 
-	public Entry createEntry(DepositRequest deposit, Context context)
+	public Entry createEntry(SwordSessionStructure swordSession)
 			throws SWORDException {
-		String collection = deposit.getCollection();
-        //TODO this requires ingest/create authZ for a new resource
-        String location = deposit.getLocation();
-        
-        if (location.endsWith("/")){ // trim ending slash
-            location = location.substring(0, location.length() - 1);
-        }
-        if (deposit.getOnBehalfOf() == null) deposit.setOnBehalfOf(deposit.getUserName());
-        
-        // do some authZ with the serviceDoc (??)
-        // check whether content types is allowed
-        // check whether package type is allowed
-        // get the first matching deposit handler
 
+        if(swordSession.httpHeader.onBehalfOf == null){
+        	swordSession.httpHeader.onBehalfOf = swordSession.userName;
+        }
+        
         try {
-        	DepositHandler handler = fileHandlerManager.getHandler(deposit.getContentType(), deposit.getPackaging());
+        	DepositHandler handler = fileHandlerManager.getHandler(swordSession.httpHeader.contentType, 
+        			                                               swordSession.httpHeader.packaging);
         	handler.setRels(m_rels);
-            return handler.ingestDeposit(deposit, context, doManager);
+            return handler.ingestDeposit(swordSession);
         } catch (Exception e) {
         	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
         }
 
-	}
+	}	
+
+
+	
+//	public Entry createEntry(DepositRequest deposit, Context context)
+//			throws SWORDException {
+//		String collection = deposit.getCollection();
+//        //TODO this requires ingest/create authZ for a new resource
+//        String location = deposit.getLocation();
+//        
+//        if (location.endsWith("/")){ // trim ending slash
+//            location = location.substring(0, location.length() - 1);
+//        }
+//        if (deposit.getOnBehalfOf() == null) deposit.setOnBehalfOf(deposit.getUserName());
+//        
+//        // do some authZ with the serviceDoc (??)
+//        // check whether content types is allowed
+//        // check whether package type is allowed
+//        // get the first matching deposit handler
+//
+//        try {
+//        	DepositHandler handler = fileHandlerManager.getHandler(deposit.getContentType(), deposit.getPackaging());
+//        	handler.setRels(m_rels);
+//            return handler.ingestDeposit(deposit, context, doManager);
+//        } catch (Exception e) {
+//        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
+//        }
+//
+//	}
 
 	public Feed getEntryFeed(String collectionId, Date startDate,
 			Context context) throws SWORDException {

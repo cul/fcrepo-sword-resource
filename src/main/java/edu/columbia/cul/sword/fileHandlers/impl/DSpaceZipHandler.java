@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.fileHandlers.DepositHandler;
+import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 
@@ -21,12 +22,12 @@ public class DSpaceZipHandler extends DefaultZipHandler implements DepositHandle
 	
 
 	@Override
-	public Entry ingestDeposit(DepositRequest deposit, Context context, DOManager doManager)
+	public Entry ingestDeposit(SwordSessionStructure swordSession)
 			throws SWORDException {
 		
 		LOGGER.info("start ingestDeposit");
 		
-		return super.ingestDeposit(deposit, context, doManager);
+		return super.ingestDeposit(swordSession);
 	}
 	
 	

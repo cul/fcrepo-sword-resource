@@ -1,5 +1,7 @@
 package edu.columbia.cul.sword.utils;
 
+import edu.columbia.cul.sword.holder.SwordSessionStructure;
+
 public class SwordUrlUtils {
 	
 	private static String basePath;
@@ -16,14 +18,20 @@ public class SwordUrlUtils {
     	return basePath;
 	}
 	
-	public static String makeDescriptionUrl(String requestPath, String collection, String pid) {
+	public static String makeDescriptionUrl(SwordSessionStructure swordSession) {
 
-    	return  String.format(descriptionUrlPattern, getBasePath(requestPath, collection), pid);
+		String path = swordSession.baseUri.getAbsolutePath().toString();
+		String collectionId = swordSession.collectionId;
+		String pid = swordSession.depositId;
+    	return  String.format(descriptionUrlPattern, getBasePath(path, collectionId), pid);
     }
     
-    public static String makeContentUrl(String requestPath, String collection, String pid) {
+    public static String makeContentUrl(SwordSessionStructure swordSession) {
     	
-    	return String.format(contentUrlPattern, getBasePath(requestPath, collection), pid);
+		String path = swordSession.baseUri.getAbsolutePath().toString();
+		String collectionId = swordSession.collectionId;
+		String pid = swordSession.depositId;
+    	return String.format(contentUrlPattern, getBasePath(path, collectionId), pid);
     }
 	
 } // ======================================================================================== //

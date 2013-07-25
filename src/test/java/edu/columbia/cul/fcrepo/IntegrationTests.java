@@ -93,7 +93,7 @@ public class IntegrationTests {
     	mockInfo.repositoryName = "mockRepo";
     	mockInfo.repositoryVersion = "0.0";
     	when(access.describeRepository(any(Context.class))).thenReturn(mockInfo);
-    	// getModule is final, so we have to mock the context
+    	// getModule is final, so we have to mock the webContext
     	GenericApplicationContext context = mock(GenericApplicationContext.class);
     	when(server.getBean(DOManager.class)).thenReturn(mgmt);
     	DOReader mockReader = getMockReader("test");
