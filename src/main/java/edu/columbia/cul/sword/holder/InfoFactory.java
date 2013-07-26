@@ -15,7 +15,7 @@ import edu.columbia.cul.sword.HttpHeaders;
 import edu.columbia.cul.sword.SWORDResource;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.names.ContextNames;
-import edu.columbia.cul.sword.utils.ServiceHelper;
+import edu.columbia.cul.sword.utils.SwordHelper;
 
 public class InfoFactory {
 	
@@ -44,7 +44,7 @@ public class InfoFactory {
 		structure.ipAddress = request.getRemoteAddr();
 		//structure.location = getURL(request);
 		
-		Context fedoraContext = ServiceHelper.getContext(structure.proxied, structure.httpHeader.onBehalfOf, request, LOGGER);
+		Context fedoraContext = SwordHelper.getContext(structure.proxied, structure.httpHeader.onBehalfOf, request, LOGGER);
 		structure.fedoraContext = fedoraContext;
 		
 

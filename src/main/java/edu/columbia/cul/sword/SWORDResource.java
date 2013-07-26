@@ -2,9 +2,9 @@ package edu.columbia.cul.sword;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,15 +37,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.stereotype.Component;
 
+import edu.columbia.cul.fcrepo.sword.FedoraService;
+import edu.columbia.cul.fcrepo.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.exceptions.SWORDException;
-import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.holder.InfoFactory;
 import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
 import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
-import edu.columbia.cul.sword.impl.fcrepo.FedoraService;
 import edu.columbia.cul.sword.utils.LogResutUtils;
-import edu.columbia.cul.sword.utils.ServiceHelper;
+import edu.columbia.cul.sword.utils.SwordHelper;
 import edu.columbia.cul.sword.xml.SwordError;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Feed;
@@ -65,13 +65,10 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     @javax.ws.rs.core.Context
     protected ServletContext m_context;
 
-    private FedoraService fedoraService;        
+    private RepositoryService repositoryService;        
     private RepositoryInfo repositoryInfo;    
     private String m_realm;   
-    private Set<String> m_collectionPids = null;
-    private FileHandlerManagerImpl fileHandlerManagerImpl;
-    
-    private DOManager doManager;
+
     private String maxUploadSize;
     private String tempUploadDir;
     
@@ -96,30 +93,16 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	}
     }
 
-    public SWORDResource(Server server) throws JAXBException, BeansException, ServerException {
+    public SWORDResource(Server server, RepositoryService repositoryService) throws JAXBException, BeansException, ServerException {
     	super(server);
 
-    	LOGGER.debug("== SWORDResource created ==");
+    	LOGGER.debug("=== SWORDResource created ===");
     	
-    	doManager = server.getBean(DOManager.class);
-    	
-    	fedoraService = new FedoraService(
-        		server.getBean(Authorization.class),
-        		server.getBean(DOManager.class),
-        		server.getBean(ResourceIndex.class));
+    	repositoryService.init(server);
+    	this.repositoryService = repositoryService;
     	
         repositoryInfo = ((Access)server.getBean(Access.class.getName())).describeRepository(READ_ONLY_CONTEXT);
-   
-    }
-    
-    // testing convenience method
-    public void setServletRequest(HttpServletRequest request) {
-    	m_servletRequest = request;
-    }
-    
-    // this is going from sword-jaxrs.xml
-    public void setMembershipPredicate(String predicate) {
-    	fedoraService.setMembershipRel(predicate);
+
     }
 
     private String getAuthenticationMethod() {
@@ -133,8 +116,8 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     }
 
     // testing convenience method
-    public void setSword(FedoraService sword) {
-        fedoraService = sword;
+    public void repositoryService(RepositoryService repositoryService) {
+        this.repositoryService = repositoryService;
     }
 
     public void ssetRealm(String realm) {
@@ -176,7 +159,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     			authzContext = getContext();
     		}
 
-    		ServiceDocument atomsvc = fedoraService.getDefaultServiceDocument(authzContext);
+    		ServiceDocument atomsvc = repositoryService.getDefaultServiceDocument(authzContext);
     		Response response = Response.status(200)
     				.entity(atomsvc)
     				.header("Content-Type", "application/atom+xml; charset=UTF-8")
@@ -240,7 +223,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     		authzContext = getContext();
     	}
     	
-    	ServiceDocument atomsvc = fedoraService.getServiceDocument(collection, authzContext);
+    	ServiceDocument atomsvc = repositoryService.getServiceDocument(collection, authzContext);
     	Response response = Response.status(200)
     			.entity(atomsvc)
     			.header("Content-Type", "application/atom+xml; charset=UTF-8")
@@ -296,7 +279,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
         	}
 
             // Generate the response
-            Feed dr = fedoraService.getEntryFeed(collection, null, authzContext);
+            Feed dr = repositoryService.getEntryFeed(collection, null, authzContext);
 
             // Print out the Deposit Response
 
@@ -337,7 +320,8 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     public Response postDeposit(
     		@PathParam("collection") String collectionId,
     		@javax.ws.rs.core.Context ServletContext servletContext,
-    		@javax.ws.rs.core.Context UriInfo uriInfo) {
+    		@javax.ws.rs.core.Context UriInfo uriInfo,
+    		@javax.ws.rs.core.Context HttpServletRequest servletRequest) {
 
     	LOGGER.debug("== Started postDeposit ==");
 
@@ -345,35 +329,34 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	
         try {
         	
-        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(m_servletRequest, servletContext, repositoryInfo);
+        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, servletContext, repositoryInfo);
         
         	swordSession.collectionId = collectionId;
         	swordSession.baseUri = uriInfo;
-			swordSession.setDoManager(doManager);
 			
         	// do all validations/authorization here (I mean call validations method) and throw exception if any 
 			
-			swordSession.tempDir = ServiceHelper.verifyTempDirectoryName(tempUploadDir);
-			File tempDir = ServiceHelper.createTempDirectory(swordSession.tempDir);
+			swordSession.tempDir = SwordHelper.verifyTempDirectoryName(tempUploadDir);
+			File tempDir = SwordHelper.createTempDirectory(swordSession.tempDir);
 
-			swordSession.maxUploadSizeInt = ServiceHelper.makeMaxUploadSize(maxUploadSize);
+			swordSession.maxUploadSizeInt = SwordHelper.makeMaxUploadSize(maxUploadSize);
 
-			tempFile = ServiceHelper.receiveFile(tempDir, m_servletRequest, counter, swordSession.maxUploadSizeInt);
+			tempFile = SwordHelper.receiveFile(tempDir, servletRequest, counter, swordSession.maxUploadSizeInt);
 			swordSession.tempFile = tempFile;
             
             LOGGER.debug(" infoStucture: \n" + LogResutUtils.printablePublicValues(swordSession) + "\n");
             // do MD5 validations here (I mean call validations method) and throw exception if any 
             
 
-            Entry resultsEntry = fedoraService.createEntry(swordSession);
-            return ServiceHelper.makeResutResponce(resultsEntry);  
+            Entry newDepositedEntry = repositoryService.createEntry(swordSession);
+            return SwordHelper.makeResutResponce(newDepositedEntry);  
             
         } catch (SWORDException e) {
         	
-            return ServiceHelper.errorResponse(e.reason,
+            return SwordHelper.errorResponse(e.reason,
 							                    HttpServletResponse.SC_BAD_REQUEST,
 							                    e.getMessage(),
-							                    m_servletRequest);
+							                    servletRequest);
         } finally {
         	if(tempFile != null && tempFile.exists()){
         		tempFile.delete();
@@ -390,30 +373,31 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     		@PathParam("collection") String collectionId,
     		@PathParam("deposit") String depositId,
     		@javax.ws.rs.core.Context ServletContext servletContext,
-    		@javax.ws.rs.core.Context UriInfo uriInfo) {
+    		@javax.ws.rs.core.Context UriInfo uriInfo,
+    		@javax.ws.rs.core.Context HttpServletRequest servletRequest
+    		) {
 
     	LOGGER.debug("Started getDepositEntry");
 
         try {
         	
-        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(m_servletRequest, servletContext, repositoryInfo);
+        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, servletContext, repositoryInfo);
         	
         	swordSession.depositId = depositId;
         	swordSession.collectionId = collectionId;
         	swordSession.baseUri = uriInfo;
-			swordSession.setDoManager(doManager);
 			
 			LOGGER.debug(" infoStucture: \n" + LogResutUtils.printablePublicValues(swordSession));
 
-			Entry entry = ServiceHelper.makeEntry(swordSession);
+			Entry entry = repositoryService.getEntry(swordSession);
             
-            return ServiceHelper.makeResutResponce(entry);
+            return SwordHelper.makeResutResponce(entry);
 
         } catch (SWORDException e) {
-            return ServiceHelper.errorResponse(e.reason,
+            return SwordHelper.errorResponse(e.reason,
 							                   e.status,
 							                   e.getMessage(),
-							                   m_servletRequest);
+							                   servletRequest);
         }
     }      
         
@@ -436,25 +420,8 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     }
 
     
-    public void setCollectionPids(Collection<String> collectionPids) {
-    	m_collectionPids = new HashSet<String>(collectionPids);
-		fedoraService.setCollections(m_collectionPids);
+    // ----------------------------- set methods set from sword-jaxrs.xml ----------------------------- //
 
-		int count = 0;
-		LOGGER.info("collectionIds size: " + m_collectionPids.size());
-		for (String collection : m_collectionPids) {
-			LOGGER.info("collection-{} {}", ++count, collection);
-		}
-
-	}
-
-	public void setFileHandlerManager(FileHandlerManagerImpl fileHandlerManagerImpl) {
-		this.fileHandlerManagerImpl = fileHandlerManagerImpl;
-		LOGGER.debug("FileHandlerManagerImpl was set - " + (fileHandlerManagerImpl != null));
-		
-		fedoraService.setFileHandlerManager(fileHandlerManagerImpl);
-	}
-	
 	public void setMaxUploadSize(String maxUploadSize){
 		this.maxUploadSize = maxUploadSize;
 	}

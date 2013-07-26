@@ -1,5 +1,6 @@
 package edu.columbia.cul.sword.impl;
 
+/* will be removed */
 import javax.servlet.http.HttpServletRequest;
 
 import edu.columbia.cul.sword.SWORDRequest;

@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword.fileHandlers;
+package edu.columbia.cul.fcrepo.sword.fileHandlers;
 
 import java.util.Set;
 
@@ -42,7 +42,7 @@ public interface DepositHandler {
      * @return
      * @throws SWORDException
      */
-    public Entry ingestDeposit(SwordSessionStructure swordSession) throws SWORDException;
+    public Entry ingestDeposit(SwordSessionStructure swordSession, DOManager doManager) throws SWORDException;
 
     
 //   do not see any reason why ATOM Entry creation should be depended on any specific ingestion

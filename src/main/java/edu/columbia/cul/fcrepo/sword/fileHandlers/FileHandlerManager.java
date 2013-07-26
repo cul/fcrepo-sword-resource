@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword.fileHandlers;
+package edu.columbia.cul.fcrepo.sword.fileHandlers;
 
 import java.util.List;
 

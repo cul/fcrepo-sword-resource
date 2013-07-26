@@ -1,37 +1,27 @@
-package edu.columbia.cul.sword.impl.fcrepo;
+package edu.columbia.cul.fcrepo.sword;
 
 import java.net.URI;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.fcrepo.common.Constants;
-import org.fcrepo.common.rdf.RDFName;
-import org.fcrepo.common.rdf.RDFNamespace;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.Server;
-import org.fcrepo.server.errors.ServerException;
-import org.fcrepo.server.errors.StorageDeviceException;
 import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.security.Authorization;
 import org.fcrepo.server.storage.DOManager;
-import org.fcrepo.server.storage.DOReader;
-import org.fcrepo.server.storage.types.RelationshipTuple;
 import org.fcrepo.server.utilities.DCFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.cul.fcrepo.Utils;
-import edu.columbia.cul.sword.EntryService;
-import edu.columbia.cul.sword.ServiceDocumentService;
-import edu.columbia.cul.sword.SwordConstants;
+import edu.columbia.cul.fcrepo.sword.fileHandlers.DepositHandler;
+import edu.columbia.cul.fcrepo.sword.fileHandlers.FileHandlerManager;
+import edu.columbia.cul.sword.RepositoryService;
 import edu.columbia.cul.sword.exceptions.SWORDException;
-import edu.columbia.cul.sword.fileHandlers.DepositHandler;
-import edu.columbia.cul.sword.fileHandlers.FileHandlerManager;
-import edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.DepositRequest;
-import edu.columbia.cul.sword.utils.ServiceHelper;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Feed;
 import edu.columbia.cul.sword.xml.service.Collection;
@@ -39,16 +29,17 @@ import edu.columbia.cul.sword.xml.service.ServiceDocument;
 import edu.columbia.cul.sword.xml.service.Workspace;
 
 //public class FedoraService implements ServiceDocumentService, EntryService, Constants {
-public class FedoraService implements ServiceDocumentService, Constants {	
+public class FedoraService implements RepositoryService, Constants {	
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(FedoraService.class.getName());	
 	private Authorization m_authz;	
 	private ResourceIndex m_resourceIndex; 	
+	private Set<String>collectionIds;
 	private DOManager doManager;	
 	private Set<String> m_rels; 	
-	private Set<String> m_collectionIds;	 
     private String m_workspace_title = "FCRepo SWORD Workspace";
     private FileHandlerManager fileHandlerManager;
+
     
     public FedoraService() {
 		m_rels = new HashSet<String>(1);
@@ -82,9 +73,6 @@ public class FedoraService implements ServiceDocumentService, Constants {
 		m_rels.add(rel);
 	}
 	
-	public void setCollections(Set<String> collectionIds) {
-		m_collectionIds = collectionIds;
-	}
 	
 	public void setWorkspaceTitle(String title) {
 		m_workspace_title = title;
@@ -95,7 +83,7 @@ public class FedoraService implements ServiceDocumentService, Constants {
 		ServiceDocument result = new ServiceDocument();
 		result.workspace = new Workspace();
 		result.workspace.title = m_workspace_title;
-		for (String collectionId: m_collectionIds) {
+		for (String collectionId: collectionIds) {
 			result.workspace.addCollection(getCollection(collectionId, context));
 		}
 		return result;
@@ -112,7 +100,7 @@ public class FedoraService implements ServiceDocumentService, Constants {
 	
 	public Collection getCollection(String collectionId, Context context) throws SWORDException {
 
-		if (!m_collectionIds.contains(collectionId)) {
+		if (!collectionIds.contains(collectionId)) {
 			throw new SWORDException(SWORDException.ERROR_REQUEST);
 		}
 
@@ -140,7 +128,7 @@ public class FedoraService implements ServiceDocumentService, Constants {
 //				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
 //			}
 //
-//			return ServiceHelper.makeEntry(deposit, doManager, context);
+//			return SwordHelper.makeEntry(deposit, doManager, context);
 //			
 //		} catch (ServerException e) {
 //			e.printStackTrace();
@@ -155,59 +143,52 @@ public class FedoraService implements ServiceDocumentService, Constants {
 	public Entry createEntry(SwordSessionStructure swordSession)
 			throws SWORDException {
 
-        if(swordSession.httpHeader.onBehalfOf == null){
-        	swordSession.httpHeader.onBehalfOf = swordSession.userName;
-        }
-        
         try {
         	DepositHandler handler = fileHandlerManager.getHandler(swordSession.httpHeader.contentType, 
         			                                               swordSession.httpHeader.packaging);
         	handler.setRels(m_rels);
-            return handler.ingestDeposit(swordSession);
+            return handler.ingestDeposit(swordSession, doManager);
         } catch (Exception e) {
         	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
         }
 
 	}	
 
-
 	
-//	public Entry createEntry(DepositRequest deposit, Context context)
-//			throws SWORDException {
-//		String collection = deposit.getCollection();
-//        //TODO this requires ingest/create authZ for a new resource
-//        String location = deposit.getLocation();
-//        
-//        if (location.endsWith("/")){ // trim ending slash
-//            location = location.substring(0, location.length() - 1);
-//        }
-//        if (deposit.getOnBehalfOf() == null) deposit.setOnBehalfOf(deposit.getUserName());
-//        
-//        // do some authZ with the serviceDoc (??)
-//        // check whether content types is allowed
-//        // check whether package type is allowed
-//        // get the first matching deposit handler
-//
-//        try {
-//        	DepositHandler handler = fileHandlerManager.getHandler(deposit.getContentType(), deposit.getPackaging());
-//        	handler.setRels(m_rels);
-//            return handler.ingestDeposit(deposit, context, doManager);
-//        } catch (Exception e) {
-//        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-//        }
-//
-//	}
-
 	public Feed getEntryFeed(String collectionId, Date startDate,
 			Context context) throws SWORDException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	public void setFileHandlerManager(FileHandlerManagerImpl fileHandlerManagerImpl) {
-		this.fileHandlerManager = fileHandlerManagerImpl;
-		LOGGER.debug("FileHandlerManagerImpl was set - " + (fileHandlerManagerImpl != null));
+	
+	public Entry getEntry(SwordSessionStructure swordSession) throws SWORDException {
+
+		return  FedoraUtils.makeEntry(swordSession, doManager);
+	}
+	
+    // -------------- set methods set from sword-jaxrs.xml ------------------ //
+    
+    public void setMembershipPredicate(String predicate) {
+    	setMembershipRel(predicate);
+    }
+
+	public void setFileHandlerManager(FileHandlerManager fileHandlerManager) {
+		this.fileHandlerManager = fileHandlerManager;
+		LOGGER.debug("FileHandlerManagerImpl was set - " + (fileHandlerManager != null));
 	}
 
-	
-} // ============================= //
+    public void setCollectionIds(Set<String>collectionIds) {
+    	
+    	this.collectionIds = collectionIds;
+    	
+		int count = 0;
+		LOGGER.info("collectionIds size: " + collectionIds.size());
+		for (String collection : collectionIds) {
+			LOGGER.info("collection-{} {}", ++count, collection);
+		}
+
+	}	
+
+    
+} // ========================================= //

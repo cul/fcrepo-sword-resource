@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword.fileHandlers.impl;
+package edu.columbia.cul.fcrepo.sword.fileHandlers.impl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,9 +8,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.cul.sword.fileHandlers.DepositHandler;
-import edu.columbia.cul.sword.fileHandlers.FileHandlerManager;
-import edu.columbia.cul.sword.fileHandlers.HandlerKey;
+import edu.columbia.cul.fcrepo.sword.fileHandlers.DepositHandler;
+import edu.columbia.cul.fcrepo.sword.fileHandlers.FileHandlerManager;
+import edu.columbia.cul.fcrepo.sword.fileHandlers.HandlerKey;
 
 
 public class FileHandlerManagerImpl implements FileHandlerManager {

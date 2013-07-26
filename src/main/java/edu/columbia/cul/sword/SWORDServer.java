@@ -6,9 +6,11 @@ import org.fcrepo.server.Context;
 import org.fcrepo.server.errors.ServerException;
 import org.purl.sword.base.AtomDocumentResponse;
 import org.purl.sword.base.Deposit;
+import org.purl.sword.base.SWORDAuthenticationException;
+import org.purl.sword.base.SWORDErrorException;
 
+import edu.columbia.cul.fcrepo.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.exceptions.SWORDException;
-import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
 import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;

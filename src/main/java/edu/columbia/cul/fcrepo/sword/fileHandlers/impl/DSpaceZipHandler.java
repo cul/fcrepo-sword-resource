@@ -1,14 +1,12 @@
-package edu.columbia.cul.sword.fileHandlers.impl;
+package edu.columbia.cul.fcrepo.sword.fileHandlers.impl;
 
-import org.fcrepo.server.Context;
 import org.fcrepo.server.storage.DOManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.columbia.cul.fcrepo.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.exceptions.SWORDException;
-import edu.columbia.cul.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.holder.SwordSessionStructure;
-import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.entry.Entry;
 
 public class DSpaceZipHandler extends DefaultZipHandler implements DepositHandler {
@@ -22,12 +20,12 @@ public class DSpaceZipHandler extends DefaultZipHandler implements DepositHandle
 	
 
 	@Override
-	public Entry ingestDeposit(SwordSessionStructure swordSession)
+	public Entry ingestDeposit(SwordSessionStructure swordSession, DOManager doManager)
 			throws SWORDException {
 		
 		LOGGER.info("start ingestDeposit");
 		
-		return super.ingestDeposit(swordSession);
+		return super.ingestDeposit(swordSession, doManager);
 	}
 	
 	

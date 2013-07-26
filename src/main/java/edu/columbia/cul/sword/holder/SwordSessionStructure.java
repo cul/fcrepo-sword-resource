@@ -52,14 +52,14 @@ public class SwordSessionStructure {
     public String tempDir;
     public int maxUploadSizeInt = -1;
     
-    private DOManager doManager;
-
-	public DOManager getDoManager() {
-		return doManager;
-	}
-
-	public void setDoManager(DOManager doManager) {
-		this.doManager = doManager;
-	}
+//    private DOManager doManager;
+//
+//	public DOManager getDoManager() {
+//		return doManager;
+//	}
+//
+//	public void setDoManager(DOManager doManager) {
+//		this.doManager = doManager;
+//	}
 
 } // ====================================================== //

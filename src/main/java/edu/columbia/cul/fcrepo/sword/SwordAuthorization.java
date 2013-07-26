@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword.impl.fcrepo;
+package edu.columbia.cul.fcrepo.sword;
 
 import java.util.Map;
 

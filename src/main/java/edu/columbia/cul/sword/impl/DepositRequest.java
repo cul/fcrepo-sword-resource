@@ -16,7 +16,7 @@ import edu.columbia.cul.sword.SWORDRequest;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.utils.SwordHttpHeaders;
 
-
+/* will be removed */
 public class DepositRequest extends SWORDRequest {
 	
 	private static final Logger log = LoggerFactory.getLogger(DepositRequest.class.getName());

@@ -40,10 +40,9 @@ import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Generator;
 import edu.columbia.cul.sword.xml.entry.Link;
 
-public class ServiceHelper implements SwordConstants {
+public class SwordHelper implements SwordConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ServiceHelper.class.getName());
-	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";
+	private static final Logger LOGGER = LoggerFactory.getLogger(SwordHelper.class.getName());
 	
 	public static Response makeResutResponce(Entry entry) {
 
@@ -52,8 +51,6 @@ public class ServiceHelper implements SwordConstants {
         for (Link link: entry.getLinks()){
         	if (link.isDescription()) location = link.getHref().toString();
         }
-        
-        System.out.println("=============== location: " + location);
 
         ResponseBuilder responseBuilder  = Response.status(HttpStatus.SC_CREATED);
         
@@ -137,54 +134,12 @@ public class ServiceHelper implements SwordConstants {
 		return tempFile;
 	}
 	
-	public static String getRelationship(Set<RelationshipTuple> relationships){
-
-        for (RelationshipTuple rel: relationships) {
-        	return rel.object;
-        }
-		
-		return null;
-	}	
-
-	public static Entry makeEntry(SwordSessionStructure swordSession, DCFields dcf, String contentType, String packaging) {
-		
-		Entry resultEntry = new Entry(swordSession.depositId);
-		resultEntry.treatment = DEFAULT_LABEL;
-		resultEntry.setDCFields(dcf);
-		resultEntry.setPackaging(packaging);
-		
-		String descUri = SwordUrlUtils.makeDescriptionUrl(swordSession);
-		String contentUri = SwordUrlUtils.makeContentUrl(swordSession);
-
-		resultEntry.addEditLink(descUri.toString());
-		//result.addEditMediaLink(mediaUri.toString());
-		resultEntry.setContent(contentUri.toString(), contentType);
-		return resultEntry;
-	}
 
 
-	public static Entry makeEntry(SwordSessionStructure swordSession) throws SWORDException {
 
-		//m_generator = new Generator(info.repositoryBaseURL, info.repositoryVersion);
-		
-		try {
 
-			if (!swordSession.getDoManager().objectExists(swordSession.depositId)) {
-				throw new SWORDException(SWORDException.FEDORA_NO_OBJECT);
-			}
+
 	
-			DOReader reader = swordSession.getDoManager().getReader(false, swordSession.fedoraContext, swordSession.depositId);
-			
-			String packaging = getRelationship(reader.getRelationships(SwordConstants.SWORD.PACKAGING, null));
-			String contentType = getRelationship(reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null));
-
-			return makeEntry(swordSession, Utils.getDCFields(reader), contentType, packaging);
-			
-		} catch (Exception e) {
-			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-		}
-		
-	}	
 	
 	
 //	public static Entry makeEntry(DepositRequest deposit, DOManager doManager, org.fcrepo.server.Context context) throws SWORDException {
