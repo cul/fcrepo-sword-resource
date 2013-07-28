@@ -26,35 +26,66 @@
   <import resource="classpath:META-INF/cxf/cxf.xml"/>
   <import resource="classpath:META-INF/cxf/cxf-servlet.xml" />
   
-    <bean id="FileHandlerManager" class="edu.columbia.cul.sword.fileHandlers.impl.FileHandlerManagerImpl">
+    <bean id="FileHandlerManager" class="edu.columbia.cul.fcrepo.sword.fileHandlers.impl.FileHandlerManagerImpl">
         <constructor-arg>
           <util:list>
-            <value>edu.columbia.cul.sword.fileHandlers.impl.DefaultZipHandler</value>
-            <value>edu.columbia.cul.sword.fileHandlers.impl.DSpaceZipHandler</value>
-            <value>edu.columbia.cul.sword.fileHandlers.impl.DefaultDepositHandler</value>
+            <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DefaultZipHandler</value>
+            <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DSpaceZipHandler</value>
+            <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DefaultDepositHandler</value>
           </util:list>
         </constructor-arg>
     </bean>
-  
-  <jaxrs:server serviceName="swordService" address="/">
-    <jaxrs:serviceBeans>
-    
-      <bean class="edu.columbia.cul.sword.SWORDResource">
-        <constructor-arg ref="org.fcrepo.server.Server" />
-        <property name="collectionPids">
-          <util:list>
-             <value>ac:111</value>
-          </util:list>
-        </property>
-        <property name="membershipPredicate">
+
+    <bean id="RepositoryService" class="edu.columbia.cul.fcrepo.sword.FedoraService">
+
+    	<property name="membershipPredicate">
            <value>http://purl.oclc.org/NET/CUL/memberOf</value>
         </property>
+        
         <property name="fileHandlerManager">
            <ref bean="FileHandlerManager"/>
         </property>
+        
+        <property name="collectionIds">
+          <util:set>
+             <value>ac:111</value>
+          </util:set>
+        </property>
+
+    </bean> 
+
+	<bean id="jaxbProvider" class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
+   		 <property name="marshallerProperties" ref="propertiesMap"/>
+   		 <property name="namespacePrefixes" ref="namespaceMap"/>
+	</bean>
+	<util:map id="propertiesMap">
+		<entry key="jaxb.formatted.output">
+			<value type="java.lang.Boolean">true</value>
+		</entry>	
+	</util:map>
+	<util:map id="namespaceMap">
+
+		<entry key="http://www.w3.org/2005/Atom">
+   			<value>atom</value>
+		</entry>
+		<entry key="http://purl.org/net/sword/">
+   			<value>sword</value>
+		</entry>
+	</util:map>
+
+  <jaxrs:server serviceName="swordService" address="/">
+    <jaxrs:serviceBeans>
+
+      <bean class="edu.columbia.cul.sword.SWORDResource">
+        <constructor-arg ref="org.fcrepo.server.Server" />
+        <constructor-arg ref="RepositoryService" /> 
       </bean>
-      
     </jaxrs:serviceBeans>
+
+  <jaxrs:providers>
+   <ref bean="jaxbProvider"/>
+  </jaxrs:providers>
+
   </jaxrs:server>
   
 </beans>
