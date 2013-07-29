@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import edu.columbia.cul.fcrepo.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.fcrepo.sword.fileHandlers.FileHandlerManager;
 import edu.columbia.cul.fcrepo.sword.fileHandlers.HandlerKey;
+import edu.columbia.cul.sword.exceptions.SWORDException;
 
 
 public class FileHandlerManagerImpl implements FileHandlerManager {
@@ -52,19 +53,18 @@ public class FileHandlerManagerImpl implements FileHandlerManager {
 		LOGGER.info("FileHandlerManagerImpl init finished.");
 	}
 	
-	public DepositHandler getHandler(String contentType, String packaging){
+	public DepositHandler getHandler(String contentType, String packaging) throws SWORDException{
 		
 		return getHandler(new HandlerKey(contentType, packaging));
 	}
 	
-	public DepositHandler getHandler(HandlerKey handlerKey){
-		
+	public DepositHandler getHandler(HandlerKey handlerKey) throws SWORDException {
+
 		if(handlers.containsKey(handlerKey)){
 			return handlers.get(handlerKey);
 		}else{
-			return handlers.get(new HandlerKey("text/html", null));
+			throw new SWORDException(SWORDException.UNSUPPORTED_MEDIA_TYPE);
 		}
-
 	}	
 	
 	public List<DepositHandler>getHandlers(){

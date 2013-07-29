@@ -41,7 +41,7 @@ public class SwordSessionStructure {
     public String password;
     public boolean authenticated; 
     public boolean proxied;   
-    public UriInfo baseUri;  
+    public UriInfo uriInfo;
     public Generator generator;  
 
 	public String ipAddress;

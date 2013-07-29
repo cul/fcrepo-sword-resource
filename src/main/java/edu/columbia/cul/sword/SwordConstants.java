@@ -14,5 +14,6 @@ public interface SwordConstants {
     public static final String DEFAULT_REALM_HEADER = "Basic realm=\"Fedora Repository Server\"";
      
 
+    public static final String SERVICEDOCUMENT = "servicedocument";
 	
 }

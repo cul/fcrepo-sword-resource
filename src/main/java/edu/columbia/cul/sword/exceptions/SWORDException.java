@@ -4,6 +4,13 @@ import java.net.URI;
 
 public class SWORDException extends Exception {
 	/**
+	 * The supplied format is not the same as that identified in the X-Packaging and Content-Type header
+	 *  and/or that supported by the server.
+	 */
+	public static final SWORDErrorInfo UNSUPPORTED_MEDIA_TYPE = new SWORDErrorInfo(
+			URI.create("http://purl.org/net/sword/error/UnsupportedMediaType"),
+			415);	
+	/**
 	 * The supplied format is not the same as that identified in the X-Packaging header
 	 *  and/or that supported by the server.
 	 */

@@ -29,9 +29,9 @@
     <bean id="FileHandlerManager" class="edu.columbia.cul.fcrepo.sword.fileHandlers.impl.FileHandlerManagerImpl">
         <constructor-arg>
           <util:list>
-            <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DefaultZipHandler</value>
+            <!-- <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DefaultZipHandler</value> -->
             <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DSpaceZipHandler</value>
-            <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DefaultDepositHandler</value>
+            <!-- <value>edu.columbia.cul.fcrepo.sword.fileHandlers.impl.DefaultDepositHandler</value> -->
           </util:list>
         </constructor-arg>
     </bean>
@@ -48,7 +48,7 @@
         
         <property name="collectionIds">
           <util:set>
-             <value>ac:111</value>
+             <value>yourCollection:1</value>
           </util:set>
         </property>
 
@@ -71,6 +71,10 @@
 		<entry key="http://purl.org/net/sword/">
    			<value>sword</value>
 		</entry>
+		<entry key="http://www.w3.org/2007/app">
+   			<value>app</value>
+		</entry>		
+
 	</util:map>
 
   <jaxrs:server serviceName="swordService" address="/">

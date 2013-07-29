@@ -45,7 +45,7 @@ public class Collection {
 	List<AcceptPackaging> acceptPackagings;
 	
 	@XmlElement(name = "service", namespace = "http://purl.org/net/sword/")
-	String service;
+	public String service;
 	
 	public Collection() {
 		this.accepts = new HashSet<String>();

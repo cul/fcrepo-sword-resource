@@ -1,11 +1,7 @@
 package edu.columbia.cul.sword;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletContext;
@@ -28,17 +24,14 @@ import org.fcrepo.server.Server;
 import org.fcrepo.server.access.Access;
 import org.fcrepo.server.access.RepositoryInfo;
 import org.fcrepo.server.errors.ServerException;
-import org.fcrepo.server.resourceIndex.ResourceIndex;
 import org.fcrepo.server.rest.BaseRestResource;
-import org.fcrepo.server.security.Authorization;
-import org.fcrepo.server.storage.DOManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 
-import edu.columbia.cul.fcrepo.sword.FedoraService;
-import edu.columbia.cul.fcrepo.sword.fileHandlers.impl.FileHandlerManagerImpl;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.holder.InfoFactory;
 import edu.columbia.cul.sword.holder.SwordSessionStructure;
@@ -93,7 +86,9 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	}
     }
 
+    //public SWORDResource(Server server, RepositoryService repositoryService, org.apache.cxf.jaxb.JAXBDataBinding dataBinding) throws JAXBException, BeansException, ServerException {
     public SWORDResource(Server server, RepositoryService repositoryService) throws JAXBException, BeansException, ServerException {
+
     	super(server);
 
     	LOGGER.debug("=== SWORDResource created ===");
@@ -102,7 +97,27 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	this.repositoryService = repositoryService;
     	
         repositoryInfo = ((Access)server.getBean(Access.class.getName())).describeRepository(READ_ONLY_CONTEXT);
+        
 
+        
+        //org.apache.cxf.jaxb.JAXBDataBinding dataBinding = server.getBean(org.apache.cxf.jaxb.JAXBDataBinding.class.getName(), org.apache.cxf.jaxb.JAXBDataBinding.class);
+
+       // Map oldPrefixes = ep.
+        
+        for (String name : server.getBeanDefinitionNames()){
+        	System.out.println("bean name: " + name);
+        }
+        
+//        Map<String,String>prefixes = new HashMap<String,String>();
+//        
+//        prefixes.put("http://www.w3.org/2005/Atom", "atom");
+//        prefixes.put("atom", "http://www.w3.org/2005/Atom");
+//        
+//        ep.setMarshallerProperties(prefixes);
+        
+        
+        
+        //dataBinding.getNamespaceMap().put("http://www.w3.org/2005/Atom", "atom");
     }
 
     private String getAuthenticationMethod() {
@@ -125,41 +140,41 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     }
     
     @GET
-    @Path("/servicedocument")
-    @Produces("text/xml")
-    public Response getServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext) {
-    	return getDefaultServiceDocument(servletContext);
+    @Path("/" + SwordConstants.SERVICEDOCUMENT)
+    @Produces("application/atomsvc+xml")
+    public Response getServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext, 
+    		                           @javax.ws.rs.core.Context HttpServletRequest servletRequest,
+    		                           @javax.ws.rs.core.Context UriInfo uriInfo) {
+    	return getDefaultServiceDocument(servletContext, servletRequest, uriInfo);
     }
     
     @GET
     @Path("/service.atomsvc")
-    @Produces("text/xml")
-    public Response getDefaultServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext) {
+    @Produces("application/atomsvc+xml")
+    public Response getDefaultServiceDocument(@javax.ws.rs.core.Context ServletContext servletContext, 
+    		                                  @javax.ws.rs.core.Context HttpServletRequest servletRequest,
+    		                                  @javax.ws.rs.core.Context UriInfo uriInfo) {
 
     	LOGGER.debug("Started getDefaultServiceDocument");
-    	//setServletContext(servletContext);
-
-    	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
-
-    	if (!request.authenticated() && authenticateWithBasic()) {
-            return authnRequiredResponse(m_realm);
-        }
+	
     	try {
-    		Context authzContext;
-    		if (request.isProxied()){
-    			Context context = getContext();
-    			// do some authZ to see if this user is allowed to proxy
-    			//m_authorization.
-    			try {
-    				authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), request.getOnBehalfOf(), null, true);
-    			} catch (Exception e) {
-    				throw new SWORDException(SWORDException.MEDIATION_NOT_ALLOWED, e);
-    			}
-    		} else {
-    			authzContext = getContext();
-    		}
-
-    		ServiceDocument atomsvc = repositoryService.getDefaultServiceDocument(authzContext);
+    		
+        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, 
+															                    servletContext, 
+															                    repositoryInfo, 
+															                    uriInfo);
+    		LOGGER.debug(" infoStucture: \n" + LogResutUtils.printablePublicValues(swordSession) + "\n");
+    		
+    		
+//        	ServiceDocumentRequest request = new ServiceDocumentRequest(servletRequest);
+//
+//        	if (!request.authenticated() && authenticateWithBasic()) {
+//                return authnRequiredResponse(m_realm);
+//            }   		
+    		
+    		
+    		ServiceDocument atomsvc = repositoryService.getDefaultServiceDocument(swordSession);
+    		
     		Response response = Response.status(200)
     				.entity(atomsvc)
     				.header("Content-Type", "application/atom+xml; charset=UTF-8")
@@ -176,68 +191,66 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     }
     
     @GET
-    @Path("/{collection}/servicedocument")
-    @Produces("text/xml")
+    @Path("/{collection}/" + SwordConstants.SERVICEDOCUMENT)
+    @Produces("application/atomsvc+xml")
     public Response getServiceDocument(
     		@PathParam("collection") String collection,
-    		@javax.ws.rs.core.Context ServletContext servletContext
+    		@javax.ws.rs.core.Context ServletContext servletContext,
+    		@javax.ws.rs.core.Context HttpServletRequest servletRequest,
+    		@javax.ws.rs.core.Context UriInfo uriInfo
     		) {
     	
-    	return getDefaultServiceDocument(collection, servletContext);
+    	return getDefaultServiceDocument(collection, servletContext, servletRequest, uriInfo);
     }
 
     @GET
     @Path("/{collection}/service.atomsvc")
-    @Produces("text/xml")
+    @Produces("application/atomsvc+xml")
     public Response getDefaultServiceDocument(
     		@PathParam("collection") String collection,
-    		@javax.ws.rs.core.Context ServletContext servletContext
+    		@javax.ws.rs.core.Context ServletContext servletContext,
+    		@javax.ws.rs.core.Context HttpServletRequest servletRequest,
+    		@javax.ws.rs.core.Context UriInfo uriInfo
     		) {
     	
+    	System.out.println("==== Started getDefaultServiceDocument for collection ====");
     	LOGGER.debug("Started getDefaultServiceDocument for collection");
-    	//setServletContext(servletContext);
 
-    	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
-//    	DepositRequest request = null;
-//		try {
-//			request = new DepositRequest(m_servletRequest);
-//		} catch (SWORDException e1) {
-//			e1.printStackTrace();
-//		}
+//    	ServiceDocumentRequest request = new ServiceDocumentRequest(m_servletRequest);
+////    	DepositRequest request = null;
+////		try {
+////			request = new DepositRequest(m_servletRequest);
+////		} catch (SWORDException e1) {
+////			e1.printStackTrace();
+////		}
+//
+//    	if (!request.authenticated() && authenticateWithBasic()) {
+//            return authnRequiredResponse(m_realm);
+//        }
+		try {
 
-    	if (!request.authenticated() && authenticateWithBasic()) {
-            return authnRequiredResponse(m_realm);
-        }
-    	try {
-    	Context authzContext;
-    	if (request.isProxied()){
-    		Context context = getContext();
-    		// do some authZ to see if this user is allowed to proxy
-    		//m_authorization.
-    		try {
-				authzContext = ReadOnlyContext.getContext(m_servletRequest.getProtocol(), request.getOnBehalfOf(), null, true);
-			} catch (Exception e) {
-				throw new SWORDException(SWORDException.MEDIATION_NOT_ALLOWED, e);
-			}
-    	} else {
-    		authzContext = getContext();
-    	}
-    	
-    	ServiceDocument atomsvc = repositoryService.getServiceDocument(collection, authzContext);
-    	Response response = Response.status(200)
-    			.entity(atomsvc)
-    			.header("Content-Type", "application/atom+xml; charset=UTF-8")
-    			.build();
-    	return response;
-    	} catch (SWORDException e) {
-    		SwordError error = new SwordError();
-    		error.treatment = "Failed to retrieve service document.";
-    		error.generator = new Generator("FCRepo", "3.6");
-    		error.reason = e.reason;
-    		Response response = Response.status(e.status).entity(error).build();
-    		return response;
-    	}
-    }
+        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, 
+															                    servletContext, 
+															                    repositoryInfo, 
+															                    uriInfo);
+			LOGGER.debug(" infoStucture: \n" + LogResutUtils.printablePublicValues(swordSession) + "\n");
+
+			ServiceDocument atomsvc = repositoryService.getServiceDocument(collection, swordSession);
+			Response response = Response
+									.status(200)
+									.entity(atomsvc)
+									.header("Content-Type",
+											"application/atom+xml; charset=UTF-8").build();
+			return response;
+		} catch (SWORDException e) {
+			SwordError error = new SwordError();
+			error.treatment = "Failed to retrieve service document.";
+			error.generator = new Generator("FCRepo", "3.6");
+			error.reason = e.reason;
+			Response response = Response.status(e.status).entity(error).build();
+			return response;
+		}
+	}
     
     /**
      * POST to the service document is not supported
@@ -316,7 +329,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
      */
     @POST
     @Path("/{collection}")
-    @Produces("text/xml")
+    @Produces("application/atomsvc+xml")
     public Response postDeposit(
     		@PathParam("collection") String collectionId,
     		@javax.ws.rs.core.Context ServletContext servletContext,
@@ -326,16 +339,19 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     	LOGGER.debug("== Started postDeposit ==");
 
     	File tempFile = null;
-    	
+    	 
         try {
         	
-        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, servletContext, repositoryInfo);
-        
+        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, 
+        			                                                          servletContext, 
+        			                                                          repositoryInfo, 
+        			                                                          uriInfo);
+
         	swordSession.collectionId = collectionId;
-        	swordSession.baseUri = uriInfo;
-			
+        	
         	// do all validations/authorization here (I mean call validations method) and throw exception if any 
-			
+        	repositoryService.isContentSupported(swordSession);
+        	
 			swordSession.tempDir = SwordHelper.verifyTempDirectoryName(tempUploadDir);
 			File tempDir = SwordHelper.createTempDirectory(swordSession.tempDir);
 
@@ -343,20 +359,23 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
 
 			tempFile = SwordHelper.receiveFile(tempDir, servletRequest, counter, swordSession.maxUploadSizeInt);
 			swordSession.tempFile = tempFile;
-            
+
             LOGGER.debug(" infoStucture: \n" + LogResutUtils.printablePublicValues(swordSession) + "\n");
             // do MD5 validations here (I mean call validations method) and throw exception if any 
-            
+
 
             Entry newDepositedEntry = repositoryService.createEntry(swordSession);
+  
             return SwordHelper.makeResutResponce(newDepositedEntry);  
             
         } catch (SWORDException e) {
         	
+        	System.out.println("=== SWORDException === " + e.status + " - " + e.getMessage() + " - " + e.reason);
             return SwordHelper.errorResponse(e.reason,
-							                    HttpServletResponse.SC_BAD_REQUEST,
-							                    e.getMessage(),
-							                    servletRequest);
+            		e.status,
+                    //HttpServletResponse.SC_BAD_REQUEST,
+                    e.getMessage(),
+                    servletRequest);	
         } finally {
         	if(tempFile != null && tempFile.exists()){
         		tempFile.delete();
@@ -368,24 +387,29 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
     
     @GET
     @Path("/{collection}/{deposit}")
-    @Produces("text/xml")
+    //@Produces("text/xml")
+    @Produces("application/atom+xml;type=entry")
     public Response getDepositEntry(
     		@PathParam("collection") String collectionId,
     		@PathParam("deposit") String depositId,
     		@javax.ws.rs.core.Context ServletContext servletContext,
     		@javax.ws.rs.core.Context UriInfo uriInfo,
-    		@javax.ws.rs.core.Context HttpServletRequest servletRequest
+    		@javax.ws.rs.core.Context HttpServletRequest servletRequest,
+    		@javax.ws.rs.core.Context javax.ws.rs.ext.Providers providers
     		) {
 
     	LOGGER.debug("Started getDepositEntry");
 
         try {
         	
-        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, servletContext, repositoryInfo);
+        	SwordSessionStructure swordSession = InfoFactory.makeNewIfoHolder(servletRequest, 
+															                    servletContext, 
+															                    repositoryInfo, 
+															                    uriInfo);
         	
         	swordSession.depositId = depositId;
         	swordSession.collectionId = collectionId;
-        	swordSession.baseUri = uriInfo;
+        	swordSession.uriInfo = uriInfo;
 			
 			LOGGER.debug(" infoStucture: \n" + LogResutUtils.printablePublicValues(swordSession));
 

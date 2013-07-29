@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,28 +15,18 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
-import org.fcrepo.server.storage.DOManager;
-import org.fcrepo.server.storage.DOReader;
-import org.fcrepo.server.storage.types.RelationshipTuple;
-import org.fcrepo.server.utilities.DCFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.columbia.cul.fcrepo.Utils;
-import edu.columbia.cul.sword.SWORDResource;
 import edu.columbia.cul.sword.SwordConstants;
 import edu.columbia.cul.sword.exceptions.SWORDException;
-import edu.columbia.cul.sword.holder.SwordSessionStructure;
-import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.xml.SwordError;
 import edu.columbia.cul.sword.xml.entry.Entry;
-import edu.columbia.cul.sword.xml.entry.Generator;
 import edu.columbia.cul.sword.xml.entry.Link;
 
 public class SwordHelper implements SwordConstants {
@@ -58,7 +47,6 @@ public class SwordHelper implements SwordConstants {
         	responseBuilder.header(HttpHeaders.LOCATION, location); }
             responseBuilder.header(HttpHeaders.CONTENT_TYPE, ATOM_CONTENT_TYPE);
             responseBuilder.entity(entry);
-
         
         Response response =  responseBuilder.build();
         return response;

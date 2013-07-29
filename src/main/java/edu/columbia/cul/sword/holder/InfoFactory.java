@@ -4,6 +4,7 @@ import java.util.StringTokenizer;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.UriInfo;
 
 import org.fcrepo.server.Context;
 import org.fcrepo.server.access.RepositoryInfo;
@@ -16,12 +17,16 @@ import edu.columbia.cul.sword.SWORDResource;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.names.ContextNames;
 import edu.columbia.cul.sword.utils.SwordHelper;
+import edu.columbia.cul.sword.utils.SwordUrlUtils;
 
 public class InfoFactory {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(InfoFactory.class.getName());
 
-	public static SwordSessionStructure makeNewIfoHolder(HttpServletRequest request, ServletContext context, RepositoryInfo repositoryInfo) throws SWORDException {
+	public static SwordSessionStructure makeNewIfoHolder(HttpServletRequest request, 
+			                                             ServletContext context, 
+			                                             RepositoryInfo repositoryInfo,
+			                                             UriInfo uriInfo) throws SWORDException {
 
 		SwordSessionStructure structure = new SwordSessionStructure();
 		
@@ -46,7 +51,7 @@ public class InfoFactory {
 		
 		Context fedoraContext = SwordHelper.getContext(structure.proxied, structure.httpHeader.onBehalfOf, request, LOGGER);
 		structure.fedoraContext = fedoraContext;
-		
+		structure.uriInfo = uriInfo;
 
 		return structure;
 	}

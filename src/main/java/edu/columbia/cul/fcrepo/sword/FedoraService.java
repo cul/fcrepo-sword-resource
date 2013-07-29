@@ -19,9 +19,11 @@ import org.slf4j.LoggerFactory;
 import edu.columbia.cul.fcrepo.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.fcrepo.sword.fileHandlers.FileHandlerManager;
 import edu.columbia.cul.sword.RepositoryService;
+import edu.columbia.cul.sword.SwordConstants;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.DepositRequest;
+import edu.columbia.cul.sword.utils.SwordUrlUtils;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.entry.Feed;
 import edu.columbia.cul.sword.xml.service.Collection;
@@ -79,35 +81,41 @@ public class FedoraService implements RepositoryService, Constants {
 	}
 	
 	
-	public ServiceDocument getDefaultServiceDocument(Context context) throws SWORDException {
+	public ServiceDocument getDefaultServiceDocument(SwordSessionStructure swordSession) throws SWORDException {
 		ServiceDocument result = new ServiceDocument();
 		result.workspace = new Workspace();
 		result.workspace.title = m_workspace_title;
 		for (String collectionId: collectionIds) {
-			result.workspace.addCollection(getCollection(collectionId, context));
+			result.workspace.addCollection(getCollection(collectionId, swordSession));
 		}
 		return result;
 	}
 	
-	public ServiceDocument getServiceDocument(String collectionId, Context context)
+	public ServiceDocument getServiceDocument(String collectionId, SwordSessionStructure swordSession)
 	  throws SWORDException {
 		ServiceDocument result = new ServiceDocument();
 		result.workspace = new Workspace();
 		result.workspace.title = m_workspace_title;
-		result.workspace.addCollection(getCollection(collectionId, context));
+		result.workspace.addCollection(getCollection(collectionId, swordSession));
 		return result;
 	}
 	
-	public Collection getCollection(String collectionId, Context context) throws SWORDException {
-
+	public Collection getCollection(String collectionId, SwordSessionStructure swordSession) throws SWORDException {
+		
 		if (!collectionIds.contains(collectionId)) {
 			throw new SWORDException(SWORDException.ERROR_REQUEST);
 		}
 
 		Collection collection = new Collection();
-		DCFields dcf = FedoraUtils.getDCFields(context, doManager, collectionId);
+
+		String basePath = SwordUrlUtils.removePathFromUrl(swordSession.uriInfo.getAbsolutePath().toString(), swordSession.uriInfo.getPath());
+
+		collection.href = basePath + "/" + collectionId;
+		collection.service = collection.href + "/" + SwordConstants.SERVICEDOCUMENT;
+
+		DCFields dcf = FedoraUtils.getDCFields(swordSession.fedoraContext, doManager, collectionId);
 		collection.setDCFields(dcf);
-		collection.mediation = FedoraUtils.isMediated(context, doManager, collectionId);
+		collection.mediation = FedoraUtils.isMediated(swordSession.fedoraContext, doManager, collectionId);
 		
 		for (DepositHandler h: fileHandlerManager.getHandlers()) {
 			collection.addAcceptableMimeType(h.getContentType());
@@ -139,19 +147,21 @@ public class FedoraService implements RepositoryService, Constants {
         
 	}
 	
+	
+	public boolean isContentSupported(SwordSessionStructure swordSession) throws SWORDException {
+		fileHandlerManager.getHandler(swordSession.httpHeader.contentType, 
+                swordSession.httpHeader.packaging);
+		
+		return true;
+	}
+	
 
-	public Entry createEntry(SwordSessionStructure swordSession)
-			throws SWORDException {
+	public Entry createEntry(SwordSessionStructure swordSession) throws SWORDException {
 
-        try {
         	DepositHandler handler = fileHandlerManager.getHandler(swordSession.httpHeader.contentType, 
         			                                               swordSession.httpHeader.packaging);
         	handler.setRels(m_rels);
-            return handler.ingestDeposit(swordSession, doManager);
-        } catch (Exception e) {
-        	throw new SWORDException(SWORDException.FEDORA_ERROR, e);
-        }
-
+        	return handler.ingestDeposit(swordSession, doManager);
 	}	
 
 	
