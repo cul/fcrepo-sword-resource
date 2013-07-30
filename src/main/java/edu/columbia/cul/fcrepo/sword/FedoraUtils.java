@@ -20,6 +20,7 @@ import edu.columbia.cul.sword.xml.entry.Entry;
 public abstract class FedoraUtils {
 	
 	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";
+	public static String NO_OP_LABEL = "No-Op (Dry Run) successful - actual object not created.";
 
 	public static DCFields getDCFields(Context context, DOManager manager, String pid) 
 	    throws SWORDException {
@@ -74,10 +75,10 @@ public abstract class FedoraUtils {
 	
 			DOReader reader = doManager.getReader(false, swordSession.fedoraContext, swordSession.depositId);
 			
-			String packaging = getRelationship(reader.getRelationships(SwordConstants.SWORD.PACKAGING, null));
-			String contentType = getRelationship(reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null));
+			swordSession.httpHeader.packaging = getRelationship(reader.getRelationships(SwordConstants.SWORD.PACKAGING, null));
+			swordSession.httpHeader.contentType = getRelationship(reader.getRelationships(SwordConstants.SWORD.CONTENT_TYPE, null));
 
-			return makeEntry(swordSession, Utils.getDCFields(reader), contentType, packaging);
+			return makeEntry(swordSession, Utils.getDCFields(reader));
 			
 		} catch (Exception e) {
 			throw new SWORDException(SWORDException.FEDORA_ERROR, e);
@@ -85,23 +86,24 @@ public abstract class FedoraUtils {
 		
 	}	
 	
-	public static Entry makeEntry(SwordSessionStructure swordSession, DCFields dcf, String contentType, String packaging) {
+	public static Entry makeEntry(SwordSessionStructure swordSession, DCFields dcf) {
 		
         if(swordSession.httpHeader.onBehalfOf == null){
         	swordSession.httpHeader.onBehalfOf = swordSession.userName;
         }
 		
 		Entry resultEntry = new Entry(swordSession.depositId);
-		resultEntry.treatment = DEFAULT_LABEL;
+		resultEntry.treatment = swordSession.noOp ? NO_OP_LABEL : DEFAULT_LABEL;
 		resultEntry.setDCFields(dcf);
-		resultEntry.setPackaging(packaging);
+		resultEntry.setPackaging(swordSession.httpHeader.packaging);
+		resultEntry.setNoOp(swordSession.noOp);
 		
 		String descUri = SwordUrlUtils.makeDescriptionUrl(swordSession);
 		String contentUri = SwordUrlUtils.makeContentUrl(swordSession);
 
 		resultEntry.addEditLink(descUri.toString());
 		//result.addEditMediaLink(mediaUri.toString());
-		resultEntry.setContent(contentUri.toString(), contentType);
+		resultEntry.setContent(contentUri.toString(), swordSession.httpHeader.contentType);
 		return resultEntry;
 	}
 	

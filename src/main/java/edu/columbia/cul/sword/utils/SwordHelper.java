@@ -16,7 +16,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.ReadOnlyContext;
@@ -33,7 +32,7 @@ public class SwordHelper implements SwordConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SwordHelper.class.getName());
 	
-	public static Response makeResutResponce(Entry entry) {
+	public static Response makeResutResponce(Entry entry, int status) {
 
 		String location = null;
 
@@ -41,7 +40,7 @@ public class SwordHelper implements SwordConstants {
         	if (link.isDescription()) location = link.getHref().toString();
         }
 
-        ResponseBuilder responseBuilder  = Response.status(HttpStatus.SC_CREATED);
+        ResponseBuilder responseBuilder  = Response.status(status);
         
         if (location != null) { 
         	responseBuilder.header(HttpHeaders.LOCATION, location); }

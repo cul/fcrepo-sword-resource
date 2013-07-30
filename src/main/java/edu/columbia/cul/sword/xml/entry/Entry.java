@@ -216,6 +216,9 @@ public class Entry {
     }
         
     public void setDCFields(DCFields dcf) {
+    	
+    	if(dcf == null) return;
+    	
     	for (DCField field :dcf.contributors()) {
     		this.addContributor(field.getValue());
     	}

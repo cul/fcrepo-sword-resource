@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Set;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+
 import org.fcrepo.common.Constants;
 import org.fcrepo.common.PID;
 import org.fcrepo.server.ReadOnlyContext;
@@ -19,9 +22,11 @@ import org.fcrepo.server.storage.types.DigitalObject;
 import org.fcrepo.server.storage.types.MIMETypedStream;
 import org.fcrepo.server.storage.types.Property;
 import org.fcrepo.server.storage.types.RelationshipTuple;
+import org.fcrepo.server.utilities.DCFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.columbia.cul.fcrepo.Utils;
 import edu.columbia.cul.fcrepo.sword.FedoraUtils;
 import edu.columbia.cul.fcrepo.sword.fileHandlers.DepositHandler;
 import edu.columbia.cul.sword.SwordConstants;
@@ -29,7 +34,6 @@ import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.DepositRequest;
 import edu.columbia.cul.sword.impl.TemplateInputStream;
-import edu.columbia.cul.sword.rdf.SwordRdfRelations;
 import edu.columbia.cul.sword.xml.entry.Entry;
 import edu.columbia.cul.sword.xml.service.Collection;
 import edu.columbia.cul.sword.xml.service.ServiceDocument;
@@ -38,7 +42,8 @@ import edu.columbia.cul.sword.xml.service.ServiceDocument;
 public class DefaultDepositHandler implements DepositHandler {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDepositHandler.class);	
-	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";		
+	public static String DEFAULT_LABEL = "Object created via SWORD Deposit";	
+	
 	protected String m_contentType = "text/html";	
 	protected String m_packaging;	
 	protected String m_namespace = "sword"; //default		
@@ -66,7 +71,7 @@ public class DefaultDepositHandler implements DepositHandler {
 		
 		Entry resultEntry = null;
 		
-		if (!swordSession.noOp) {
+//		if (!swordSession.noOp) {
 			
 			try {
 				
@@ -141,34 +146,33 @@ public class DefaultDepositHandler implements DepositHandler {
 				ds.DSLabel = swordSession.fileName;
 				ds.DSMIME = swordSession.httpHeader.contentType;
 				ds.DSCreateDT = new Date();
-
-				writer.addDatastream(ds, true);
-				writer.commit(DEFAULT_LABEL);
 				
-//				DCFields dcf = Utils.getDCFields(writer);
-
 				swordSession.depositId = pid;
-
-				resultEntry = FedoraUtils.makeEntry(swordSession, doManager);
-
+				writer.addDatastream(ds, true);
 				
+				
+				if(swordSession.noOp) {
+					DCFields dcf = Utils.getDCFields(writer);
+					resultEntry = FedoraUtils.makeEntry(swordSession, dcf);
+				}else{
+					
+					writer.commit(DEFAULT_LABEL);
+					resultEntry = FedoraUtils.makeEntry(swordSession, doManager);
+				}
+
 			} catch (Exception e) {
 				throw new SWORDException(SWORDException.FEDORA_ERROR, e);
 			}
-		} else {
-			resultEntry = new Entry("noOp");
-		}
+//		} else {
+//			resultEntry = new Entry("noOp");
+//		}
 		
 		// do some stuff with link
 		return resultEntry;
 	}    
 
 
-
 	protected void addRelationship(String pid, DOWriter writer) throws ServerException {
-		
-		System.out.println("======= XXX 1 === " + SwordRdfRelations.CONTENT_TYPE.getUri());
-		System.out.println("======= XXX 2 === " + SwordConstants.SWORD.CONTENT_TYPE.uri);
 		
 		if(m_contentType != null) {
 			writer.addRelationship("info:fedora/" + pid, SwordConstants.SWORD.CONTENT_TYPE.uri, "contentType:" + m_contentType, false, null);

@@ -13,7 +13,6 @@ import edu.columbia.cul.fcrepo.sword.fileHandlers.FileHandlerManager;
 import edu.columbia.cul.fcrepo.sword.fileHandlers.HandlerKey;
 import edu.columbia.cul.sword.exceptions.SWORDException;
 
-
 public class FileHandlerManagerImpl implements FileHandlerManager {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(FileHandlerManagerImpl.class.getName());

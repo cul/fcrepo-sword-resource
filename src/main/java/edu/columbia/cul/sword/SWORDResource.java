@@ -16,6 +16,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBException;
 
+import org.apache.commons.httpclient.HttpStatus;
 import org.fcrepo.common.Constants;
 import org.fcrepo.server.Context;
 import org.fcrepo.server.MultiValueMap;
@@ -28,15 +29,12 @@ import org.fcrepo.server.rest.BaseRestResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import edu.columbia.cul.sword.exceptions.SWORDException;
 import edu.columbia.cul.sword.holder.InfoFactory;
 import edu.columbia.cul.sword.holder.SwordSessionStructure;
 import edu.columbia.cul.sword.impl.AtomEntryRequest;
-import edu.columbia.cul.sword.impl.ServiceDocumentRequest;
 import edu.columbia.cul.sword.utils.LogResutUtils;
 import edu.columbia.cul.sword.utils.SwordHelper;
 import edu.columbia.cul.sword.xml.SwordError;
@@ -362,18 +360,13 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
 
             LOGGER.debug(" infoStucture: \n" + LogResutUtils.printablePublicValues(swordSession) + "\n");
             // do MD5 validations here (I mean call validations method) and throw exception if any 
-
-
             Entry newDepositedEntry = repositoryService.createEntry(swordSession);
   
-            return SwordHelper.makeResutResponce(newDepositedEntry);  
-            
+            return SwordHelper.makeResutResponce(newDepositedEntry, swordSession.noOp ?HttpStatus.SC_OK : HttpStatus.SC_CREATED);  
+            //return SwordHelper.makeResutResponce(newDepositedEntry, HttpStatus.SC_CREATED); 
         } catch (SWORDException e) {
-        	
-        	System.out.println("=== SWORDException === " + e.status + " - " + e.getMessage() + " - " + e.reason);
             return SwordHelper.errorResponse(e.reason,
             		e.status,
-                    //HttpServletResponse.SC_BAD_REQUEST,
                     e.getMessage(),
                     servletRequest);	
         } finally {
@@ -415,7 +408,7 @@ public class SWORDResource extends BaseRestResource implements SwordConstants {
 
 			Entry entry = repositoryService.getEntry(swordSession);
             
-            return SwordHelper.makeResutResponce(entry);
+            return SwordHelper.makeResutResponce(entry, HttpStatus.SC_OK);
 
         } catch (SWORDException e) {
             return SwordHelper.errorResponse(e.reason,

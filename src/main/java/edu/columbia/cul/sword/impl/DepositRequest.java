@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.Enumeration;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -14,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import edu.columbia.cul.sword.HttpHeaders;
 import edu.columbia.cul.sword.SWORDRequest;
 import edu.columbia.cul.sword.exceptions.SWORDException;
-import edu.columbia.cul.sword.utils.SwordHttpHeaders;
 
 /* will be removed */
 public class DepositRequest extends SWORDRequest {
@@ -50,74 +48,6 @@ public class DepositRequest extends SWORDRequest {
         verbose = booleanValue(request.getHeader(HttpHeaders.X_VERBOSE), "verbose");
         slug = request.getHeader(org.purl.sword.base.HttpHeaders.SLUG);
 
-        
-        
-        
-        log.info("ipAddress:           {}", getIPAddress());
-        log.info("Content-Disposition: {}", getContentDisposition());
-        log.info("Content-MD5:         {}", getMD5());
-        
-        log.info("Content-Type:        {}", getContentType());
-        log.info("contentLength:       {}", getContentLength());
-
-        log.info("packaging:           {}", getPackaging());
-        log.info("isNoOp:              {}", isNoOp());
-        log.info("isVerbose:           {}", isVerbose());
-        log.info("slug:                {}", getSlug());
-        
-        log.info("isProxied:           {}", isProxied()); 
-        log.info("onBehalfOf():        {}", getOnBehalfOf());
-        log.info("location:            {}", getLocation());
-        
-        log.info("userAgent:           {}", this.getUserAgent());
-        log.info("userAgent:           {}", this.getUserAgent());
-        
-        log.info("authenticated:       {}", authenticated());
-        
-        
-        log.info("Authorization:       {}", request.getHeader("Authorization"));
-        
-        
-        System.out.println("1 ==============================================================");
-        
-        Enumeration<String>names = request.getParameterNames();
-        while(names.hasMoreElements()){
-        	String name = names.nextElement();
-        	System.out.println("======= Parameter name: " + name + " = " + request.getParameter(name));
-        }   
-
-        System.out.println("2 ==============================================================");
-        
-        names = request.getAttributeNames();
-        while(names.hasMoreElements()){
-        	String name = names.nextElement();
-        	System.out.println("======= Attribute name: " + name + " = " + request.getAttribute(name));
-        }
-        
-        System.out.println("3 ==============================================================");
-        
-        System.out.println("===++==   Header name: " + HttpHeaders.USER_AGENT + " = " + request.getHeader(HttpHeaders.USER_AGENT));
-        System.out.println("===++==   Header name: " + HttpHeaders.USER_AGENT + " = " + request.getHeader(HttpHeaders.USER_AGENT));
-        System.out.println("===+!+==   Header name: " + SwordHttpHeaders.USER_AGENT.getName() + " = " + SwordHttpHeaders.USER_AGENT.getValue(request));
-        
-        
-        
-        System.out.println("===++== Authorization: " + " = " + request.getHeader("Authorization"));
-        System.out.println("===++== WWW-Authenticate: " + " = " + request.getHeader("WWW-Authenticate"));
-        
-
-        names = request.getHeaderNames();
-        while(names.hasMoreElements()){
-        	String name = names.nextElement();
-        	System.out.println("======= Header name: " + name + " = " + request.getHeader(name));
-        	
-        }
-
-        System.out.println("4 ==============================================================");
-        
-        
-        log.info("userName:            {}", getUserName());
-        log.info("password:            {}", getPassword());
     }
     
     public void setContentType(String contentType) {

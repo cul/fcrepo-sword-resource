@@ -1,4 +1,4 @@
-package edu.columbia.cul.sword.utils;
+package edu.columbia.cul.sword.names;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -18,18 +18,25 @@ public enum SwordHttpHeaders {
 	SLUG(HttpHeaders.SLUG),
 	CONTENT_DISPOSITION(HttpHeaders.CONTENT_DISPOSITION);
 	
-	private String name;
+	private String httpHeaderName;
+	private String swordName;
 	
-	private SwordHttpHeaders(String name) {
-		this.name = name;
+	private SwordHttpHeaders(String httpHeaderName) {
+		this.httpHeaderName = httpHeaderName;
 	}
 	
+//	private SwordHttpHeaders(String httpHeaderName, String swordName) {
+//		this.httpHeaderName = httpHeaderName;
+//		this.swordName = swordName;
+//	}	
+	
 	public String getValue(HttpServletRequest request){
-		return request.getHeader(name);
+		return request.getHeader(httpHeaderName);
 	}
 	
 	public String getName(){
-		return name;
+		return httpHeaderName;
 	}
 
 } // ====================================================== //
+
